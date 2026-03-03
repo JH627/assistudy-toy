@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: log-process-service
+  profiles:
+    active: ${ACTIVE_PROFILE}
+  config:
+    import: "optional:configserver:http://config-service:8888"
+  cloud:
+    config:
+      username: ${CLOUD_CONFIG_USERNAME}
+      password: ${CLOUD_CONFIG_PASSWORD}
+      fail-fast: false
+      retry:
+        initial-interval: 1000
+        max-attempts: 6
+  main:
+    web-application-type: servlet
+
+# Eureka 클라이언트 설정
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    hostname: log-process-service
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    prefer-ip-address: true
+
+# 서버 포트 (웹 애플리케이션으로 변경했으므로 필요)
+server:
+  port: 8084
+
+# Actuator 엔드포인트 활성화
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,env
+  endpoint:
+    health:
+      show-details: always

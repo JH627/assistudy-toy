@@ -1,0 +1,19 @@
+package com.assistudy.commonservice.webrtc.service;
+
+import com.assistudy.commonservice.webrtc.dto.request.CreateTokenRequest;
+import com.assistudy.commonservice.webrtc.dto.response.TokenResponse;
+
+/**
+ * WebRTC 서비스 인터페이스
+ * 화상회의 관련 비즈니스 로직을 정의합니다.
+ */
+public interface WebRTCService {
+
+    /**
+     * 토큰을 생성합니다.
+     * @param request 토큰 생성 요청 정보
+     * @param userId 사용자 ID
+     * @return 토큰 응답 정보
+     */
+    TokenResponse createToken(CreateTokenRequest request, Long userId);
+} 
