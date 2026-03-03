@@ -1,0 +1,79 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.0.2'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.assistudy'
+version = '0.0.1-SNAPSHOT'
+description = 'Common Service for Assistudy'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('springCloudVersion', "2025.1.1")
+}
+
+dependencies {
+	// Eureka Client
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+	// Spring Cloud Config Client
+	implementation 'org.springframework.cloud:spring-cloud-starter-config'
+
+	// Spring Boot Actuator for refresh
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// Prometheus metrics
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	// WebClient
+	implementation 'io.livekit:livekit-server:0.8.2'
+
+	// Spring Data JPA
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// Spring DevTools
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// MySQL
+	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+	// Swagger UI
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+
+	// Feign Client
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
