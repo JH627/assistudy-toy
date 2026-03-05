@@ -1,15 +1,27 @@
 spring:
   application:
     name: apigateway-service
-  profiles:
-    active: ${ACTIVE_PROFILE}
-  config:
-    import: "optional:configserver:http://config-service:8888"
-  cloud:
-    config:
-      username: ${CLOUD_CONFIG_USERNAME}
-      password: ${CLOUD_CONFIG_PASSWORD}
-      fail-fast: false
-      retry:
-        initial-interval: 1000
-        max-attempts: 6
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: "User Service"
+        url: "/user-service/v3/api-docs"
+      - name: "Common Service"
+        url: "/common-service/v3/api-docs"
+    display-request-duration: true
+    operations-sorter: method
+    tags-sorter: alpha
