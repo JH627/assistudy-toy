@@ -36,6 +36,7 @@ public class KafkaConsumerService {
     public void handleFocusLog(@Payload String message,
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                                @Header(KafkaHeaders.OFFSET) long offset,
+                               @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                Acknowledgment acknowledgment) {
         try {
             log.info("Received focus log from topic={}, offset={}", topic, offset);
@@ -45,7 +46,7 @@ public class KafkaConsumerService {
                 return;
             }
 
-            oneMinuteAggregationService.collectLog(logDto, true);
+            oneMinuteAggregationService.collectLog(logDto, true, partition);
             acknowledgment.acknowledge();
 
         } catch (Exception e) {
@@ -58,6 +59,7 @@ public class KafkaConsumerService {
     public void handleBehaviorLog(@Payload String message,
                                   @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                                   @Header(KafkaHeaders.OFFSET) long offset,
+                                  @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                   Acknowledgment acknowledgment) {
         try {
             log.info("Received behavior log from topic={}, offset={}", topic, offset);
@@ -67,7 +69,7 @@ public class KafkaConsumerService {
                 return;
             }
 
-            oneMinuteAggregationService.collectLog(logDto, false);
+            oneMinuteAggregationService.collectLog(logDto, false, partition);
             acknowledgment.acknowledge();
 
         } catch (Exception e) {

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -30,15 +31,31 @@ public class OneMinuteAggregationService {
     // List<OnDeviceLogDto> 대신 집계 상태만 유지 → 메모리 O(유저-룸 쌍 수)
     private final Map<String, AggregateState> oneMinuteAggregates = new ConcurrentHashMap<>();
 
-    public void collectLog(OnDeviceLogDto logDto, boolean isFocusLog) {
+    public void collectLog(OnDeviceLogDto logDto, boolean isFocusLog, int partition) {
         String key = logDto.getUserId() + "_" + logDto.getRoomId();
         // compute는 원자적으로 실행되어 thread-safe
         oneMinuteAggregates.compute(key, (k, state) -> {
-            if (state == null) state = new AggregateState(logDto.getUserId(), logDto.getRoomId());
+            if (state == null) state = new AggregateState(logDto.getUserId(), logDto.getRoomId(), partition);
             state.update(logDto, isFocusLog);
             return state;
         });
         log.debug("Log collected for key={}", key);
+    }
+
+    public void flushByPartitions(Set<Integer> partitionIds) {
+        for (String key : new HashSet<>(oneMinuteAggregates.keySet())) {
+            AggregateState state = oneMinuteAggregates.get(key);
+            if (state == null || !partitionIds.contains(state.partition)) continue;
+            // remove는 원자적 → processOneMinuteLogs와 중복 처리 방지
+            state = oneMinuteAggregates.remove(key);
+            if (state == null) continue;
+            try {
+                log.info("Flushing aggregate for key={} due to partition rebalance", key);
+                processAggregateState(state);
+            } catch (Exception e) {
+                log.error("Failed to flush aggregate for key={}", key, e);
+            }
+        }
     }
 
     @Scheduled(fixedRate = 60000)
@@ -139,6 +156,7 @@ public class OneMinuteAggregationService {
     static class AggregateState {
         final Long userId;
         final Long roomId;
+        final int partition; // 리밸런싱 시 플러시 대상 파악용
 
         double scoreSum = 0;
         double scoreMax = Double.MIN_VALUE;
@@ -149,9 +167,10 @@ public class OneMinuteAggregationService {
         int headTurnCount = 0;
         int totalLogs = 0;
 
-        AggregateState(Long userId, Long roomId) {
+        AggregateState(Long userId, Long roomId, int partition) {
             this.userId = userId;
             this.roomId = roomId;
+            this.partition = partition;
         }
 
         void update(OnDeviceLogDto log, boolean isFocusLog) {
