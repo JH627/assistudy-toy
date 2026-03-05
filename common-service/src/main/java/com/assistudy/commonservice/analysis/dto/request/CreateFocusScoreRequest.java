@@ -32,5 +32,8 @@ public class CreateFocusScoreRequest {
     @NotNull(message = "집중 종료 시간은 필수입니다")
     private LocalDateTime endTime;
 
+    @NotNull(message = "윈도우 시작 시각은 필수입니다")
+    private LocalDateTime windowStart;  // 1분 윈도우 시작 시각 (upsert 키)
+
     private String evaluationText;  // 1분간 종합 평가 텍스트
 }

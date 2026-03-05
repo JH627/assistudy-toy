@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,9 +34,10 @@ public class OneMinuteAggregationService {
 
     public void collectLog(OnDeviceLogDto logDto, boolean isFocusLog, int partition) {
         String key = logDto.getUserId() + "_" + logDto.getRoomId();
+        LocalDateTime windowStart = LocalDateTime.now(ZoneId.of("Asia/Seoul")).truncatedTo(ChronoUnit.MINUTES);
         // compute는 원자적으로 실행되어 thread-safe
         oneMinuteAggregates.compute(key, (k, state) -> {
-            if (state == null) state = new AggregateState(logDto.getUserId(), logDto.getRoomId(), partition);
+            if (state == null) state = new AggregateState(logDto.getUserId(), logDto.getRoomId(), partition, windowStart);
             state.update(logDto, isFocusLog);
             return state;
         });
@@ -93,7 +95,7 @@ public class OneMinuteAggregationService {
             state.userId, state.roomId, averageScore, studySeconds,
             state.yawnCount, state.gazeDistractionCount, state.headTurnCount);
 
-        saveFocusScore(state.userId, state.roomId, averageScore, studySeconds, evaluationText);
+        saveFocusScore(state.userId, state.roomId, averageScore, studySeconds, state.windowStart, evaluationText);
     }
 
     private String generateEvaluation(AggregateState state, int averageScore, int studySeconds) {
@@ -131,7 +133,8 @@ public class OneMinuteAggregationService {
         return sb.toString();
     }
 
-    private void saveFocusScore(Long userId, Long roomId, int averageScore, int studySeconds, String evaluationText) {
+    private void saveFocusScore(Long userId, Long roomId, int averageScore, int studySeconds,
+                                LocalDateTime windowStart, String evaluationText) {
         try {
             CreateFocusScoreRequest request = CreateFocusScoreRequest.builder()
                 .userId(userId)
@@ -139,6 +142,7 @@ public class OneMinuteAggregationService {
                 .score(averageScore)
                 .studySeconds(studySeconds)
                 .endTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                .windowStart(windowStart)
                 .evaluationText(evaluationText)
                 .build();
 
@@ -156,7 +160,8 @@ public class OneMinuteAggregationService {
     static class AggregateState {
         final Long userId;
         final Long roomId;
-        final int partition; // 리밸런싱 시 플러시 대상 파악용
+        final int partition;           // 리밸런싱 시 플러시 대상 파악용
+        final LocalDateTime windowStart; // 1분 윈도우 시작 시각 (upsert 키)
 
         double scoreSum = 0;
         double scoreMax = Double.MIN_VALUE;
@@ -167,10 +172,11 @@ public class OneMinuteAggregationService {
         int headTurnCount = 0;
         int totalLogs = 0;
 
-        AggregateState(Long userId, Long roomId, int partition) {
+        AggregateState(Long userId, Long roomId, int partition, LocalDateTime windowStart) {
             this.userId = userId;
             this.roomId = roomId;
             this.partition = partition;
+            this.windowStart = windowStart;
         }
 
         void update(OnDeviceLogDto log, boolean isFocusLog) {
