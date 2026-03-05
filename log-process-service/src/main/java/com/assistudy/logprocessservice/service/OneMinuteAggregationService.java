@@ -22,6 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class OneMinuteAggregationService {
 
+    // FE가 focus log를 5초마다 전송 → 순공부시간 = focusLogCount × 5초
+    private static final int FOCUS_LOG_INTERVAL_SECONDS = 5;
+
     private final CommonServiceClient commonServiceClient;
 
     // List<OnDeviceLogDto> 대신 집계 상태만 유지 → 메모리 O(유저-룸 쌍 수)
@@ -66,16 +69,17 @@ public class OneMinuteAggregationService {
         if (state.focusLogCount == 0) return;
 
         int averageScore = (int) Math.round(state.scoreSum / state.focusLogCount);
-        String evaluationText = generateEvaluation(state, averageScore);
+        int studySeconds = state.focusLogCount * FOCUS_LOG_INTERVAL_SECONDS;
+        String evaluationText = generateEvaluation(state, averageScore, studySeconds);
 
-        log.info("user={}, room={}, avgScore={}, yawn={}, gaze={}, head={}",
-            state.userId, state.roomId, averageScore,
+        log.info("user={}, room={}, avgScore={}, studySeconds={}, yawn={}, gaze={}, head={}",
+            state.userId, state.roomId, averageScore, studySeconds,
             state.yawnCount, state.gazeDistractionCount, state.headTurnCount);
 
-        saveFocusScore(state.userId, state.roomId, averageScore, evaluationText);
+        saveFocusScore(state.userId, state.roomId, averageScore, studySeconds, evaluationText);
     }
 
-    private String generateEvaluation(AggregateState state, int averageScore) {
+    private String generateEvaluation(AggregateState state, int averageScore, int studySeconds) {
         double maxScore = state.scoreMax;
         double minScore = state.scoreMin == Double.MAX_VALUE ? 0 : state.scoreMin;
 
@@ -87,7 +91,7 @@ public class OneMinuteAggregationService {
         else if (averageScore >= 30) sb.append("집중력이 다소 부족했습니다. ");
         else sb.append("집중력이 매우 낮았습니다. ");
 
-        sb.append(String.format("평균 집중도 %d점. ", averageScore));
+        sb.append(String.format("평균 집중도 %d점, 실제 학습시간 %d초. ", averageScore, studySeconds));
 
         List<String> issues = new ArrayList<>();
         List<String> positives = new ArrayList<>();
@@ -110,12 +114,13 @@ public class OneMinuteAggregationService {
         return sb.toString();
     }
 
-    private void saveFocusScore(Long userId, Long roomId, int averageScore, String evaluationText) {
+    private void saveFocusScore(Long userId, Long roomId, int averageScore, int studySeconds, String evaluationText) {
         try {
             CreateFocusScoreRequest request = CreateFocusScoreRequest.builder()
                 .userId(userId)
                 .roomId(roomId)
                 .score(averageScore)
+                .studySeconds(studySeconds)
                 .endTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
                 .evaluationText(evaluationText)
                 .build();

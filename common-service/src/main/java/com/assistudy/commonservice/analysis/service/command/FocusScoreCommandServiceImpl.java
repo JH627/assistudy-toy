@@ -50,10 +50,10 @@ public class FocusScoreCommandServiceImpl implements FocusScoreCommandService {
 
 		FocusScore savedFocusScore = focusScoreRepository.save(focusScore);
 
-		// TotalTime 업데이트: focusTime = 점수 * 0.01, totalTime = 60초
+		// TotalTime 업데이트: totalTime = 실제 순공부시간, focusTime = totalTime * (score / 100)
 		LocalDate date = request.getEndTime().toLocalDate();
-		Integer additionalFocusTime = (int) (request.getScore() * 0.01 * 60); // 점수 * 0.01 (100점 만점)
-		Integer additionalTotalTime = 60; // 1분 = 60초
+		Integer additionalTotalTime = request.getStudySeconds();
+		Integer additionalFocusTime = (int) (additionalTotalTime * (request.getScore() / 100.0));
 
 		totalTimeCommandService.updateOrCreateTotalTime(
 			request.getUserId(),
