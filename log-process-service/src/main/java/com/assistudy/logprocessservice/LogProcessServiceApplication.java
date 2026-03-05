@@ -19,20 +19,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class LogProcessServiceApplication {
 
     public static void main(String[] args) {
-        // Spark 관련 시스템 프로퍼티 설정
-        System.setProperty("spark.sql.warehouse.dir", "/tmp/spark-warehouse");
-        System.setProperty("java.io.tmpdir", "/tmp");
-        
-        log.info("🚀 Starting Log Process Service with Embedded Spark...");
         SpringApplication.run(LogProcessServiceApplication.class, args);
-        log.info("✅ Log Process Service started successfully - Kafka consumers are active");
-        
-        // Keep the application running to listen for Kafka messages
-        try {
-            Thread.currentThread().join();
-        } catch (InterruptedException e) {
-            log.error("Application interrupted", e);
-            Thread.currentThread().interrupt();
-        }
     }
 }

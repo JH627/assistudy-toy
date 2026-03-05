@@ -1,27 +1,22 @@
 plugins {
     id 'java'
-    id 'scala'
-    id 'org.springframework.boot' version '2.7.18'
-    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id 'org.springframework.boot' version '4.0.2'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.assistudy'
 version = '0.0.1-SNAPSHOT'
+description = 'Log Process Service for Assistudy'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
-    }
-    all {
-        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
-        exclude group: 'ch.qos.logback', module: 'logback-classic'
-        exclude group: 'ch.qos.logback', module: 'logback-core'
     }
 }
 
@@ -30,50 +25,32 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', "2021.0.8")
-    set('sparkVersion', "3.4.1")
-    set('scalaCompatVersion', "2.12")
+    set('springCloudVersion', "2025.1.1")
 }
 
 dependencies {
     // Spring Boot Core
-    implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // Log4j2
-    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
-    implementation 'com.lmax:disruptor:3.4.4'
-
     // Spring Cloud MSA
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
     implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
 
     // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
 
-    // Spark
-    implementation("org.apache.spark:spark-core_${scalaCompatVersion}:${sparkVersion}") {
-        exclude group: 'org.slf4j'
-        exclude group: 'log4j'
-        exclude group: 'org.apache.logging.log4j'
-        exclude group: 'com.google.guava'
-        exclude group: 'org.glassfish.jersey'
-    }
-    implementation("org.apache.spark:spark-sql_${scalaCompatVersion}:${sparkVersion}") {
-        exclude group: 'org.slf4j'
-        exclude group: 'log4j'
-        exclude group: 'org.apache.logging.log4j'
-        exclude group: 'com.google.guava'
-        exclude group: 'org.glassfish.jersey'
-    }
+    // Metrics
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
     // Jackson
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // API Docs
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -84,10 +61,7 @@ dependencies {
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation("org.springframework.kafka:spring-kafka-test") {
-        exclude group: 'org.apache.kafka', module: "kafka_${scalaCompatVersion}"
-        exclude group: 'org.apache.kafka', module: "kafka_2.13"
-    }
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -99,12 +73,4 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
-}
-
-jar {
-    manifest {
-        attributes(
-                'Main-Class': 'com.assistudy.logprocessservice.LogProcessServiceApplication'
-        )
-    }
 }
