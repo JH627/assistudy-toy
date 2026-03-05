@@ -44,10 +44,7 @@ public class KafkaProducerService {
     }
 
     private String generateMessageKey(OnDeviceLogRequest logRequest) {
-        // Key 생성: userId_roomId_timestamp 형식으로 파티셔닝
-        return String.format("%d_%d_%d", 
-                logRequest.getUserId(), 
-                logRequest.getRoomId(), 
-                System.currentTimeMillis());
+        // Key 생성: userId_roomId로 고정 → 같은 유저-룸의 로그는 항상 같은 파티션/인스턴스에서 처리
+        return logRequest.getUserId() + "_" + logRequest.getRoomId();
     }
 }
