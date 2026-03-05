@@ -31,8 +31,6 @@ ext {
 dependencies {
 	// Eureka Client
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-	// Spring Cloud Config Client
-	implementation 'org.springframework.cloud:spring-cloud-starter-config'
 	// Spring Boot Actuator for refresh
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	// Prometheus metrics
