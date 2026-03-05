@@ -1,15 +1,25 @@
 spring:
   application:
     name: common-service
-  profiles:
-    active: ${ACTIVE_PROFILE}
-  config:
-    import: "optional:configserver:http://config-service:8888"
-  cloud:
-    config:
-      username: ${CLOUD_CONFIG_USERNAME}
-      password: ${CLOUD_CONFIG_PASSWORD}
-      fail-fast: false
-      retry:
-        initial-interval: 1000
-        max-attempts: 6
+  jpa:
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  info:
+    title: Common Service API
+    description: Assistudy Common Service
+    version: 1.0.0
+  swagger-ui:
+    operations-sorter: method
+    display-request-duration: true
+  api-docs:
+    path: /v3/api-docs

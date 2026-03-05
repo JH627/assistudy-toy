@@ -1,0 +1,26 @@
+jwt:
+  public-key: ${JWT_PUBLIC_KEY}
+  access-token:
+    expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
+  refresh-token:
+    expiration: ${JWT_REFRESH_TOKEN_EXPIRATION}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: false
+    hostname: apigateway-service
+    instance-id: apigateway-service:8080
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+
+logging:
+  level:
+    root: INFO
+    com.assistudy: INFO
+    org.springframework.cloud.gateway: WARN
+    org.springframework.security: WARN

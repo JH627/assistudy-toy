@@ -1,0 +1,24 @@
+jwt:
+  public-key: ${JWT_PUBLIC_KEY}
+  access-token:
+    expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:86400000}
+  refresh-token:
+    expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.value}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+
+logging:
+  level:
+    com.assistudy: DEBUG
+    org.springframework.cloud.gateway: INFO
+    org.springframework.security: DEBUG
