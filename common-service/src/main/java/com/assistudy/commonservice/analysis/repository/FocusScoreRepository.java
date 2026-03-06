@@ -30,4 +30,7 @@ public interface FocusScoreRepository extends JpaRepository<FocusScore, Long> {
     List<FocusScore> findByUserIdAndRoomIdAndEndTimeDate(@Param("userId") Long userId,
                                                          @Param("roomId") Long roomId,
                                                          @Param("date") LocalDate date);
+
+    // windowStart 기반 upsert 조회 (리밸런싱 중복 방지)
+    Optional<FocusScore> findByUserIdAndRoomIdAndWindowStart(Long userId, Long roomId, LocalDateTime windowStart);
 }

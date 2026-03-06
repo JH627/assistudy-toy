@@ -11,176 +11,187 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class OneMinuteAggregationService {
 
+    // FE가 focus log를 5초마다 전송 → 순공부시간 = focusLogCount × 5초
+    private static final int FOCUS_LOG_INTERVAL_SECONDS = 5;
+
     private final CommonServiceClient commonServiceClient;
 
-    private final Map<String, List<OnDeviceLogDto>> oneMinuteLogs = new ConcurrentHashMap<>();
+    // List<OnDeviceLogDto> 대신 집계 상태만 유지 → 메모리 O(유저-룸 쌍 수)
+    private final Map<String, AggregateState> oneMinuteAggregates = new ConcurrentHashMap<>();
 
-    public void collectLog(OnDeviceLogDto logDto) {
-        String key = logDto.getUserId() + "-" + logDto.getRoomId();
-        oneMinuteLogs.computeIfAbsent(key, k -> new ArrayList<>()).add(logDto);
-        log.debug("Log collected for key={}, total={}", key, oneMinuteLogs.get(key).size());
+    public void collectLog(OnDeviceLogDto logDto, boolean isFocusLog, int partition) {
+        String key = logDto.getUserId() + "_" + logDto.getRoomId();
+        LocalDateTime windowStart = LocalDateTime.now(ZoneId.of("Asia/Seoul")).truncatedTo(ChronoUnit.MINUTES);
+        // compute는 원자적으로 실행되어 thread-safe
+        oneMinuteAggregates.compute(key, (k, state) -> {
+            if (state == null) state = new AggregateState(logDto.getUserId(), logDto.getRoomId(), partition, windowStart);
+            state.update(logDto, isFocusLog);
+            return state;
+        });
+        log.debug("Log collected for key={}", key);
+    }
+
+    public void flushByPartitions(Set<Integer> partitionIds) {
+        for (String key : new HashSet<>(oneMinuteAggregates.keySet())) {
+            AggregateState state = oneMinuteAggregates.get(key);
+            if (state == null || !partitionIds.contains(state.partition)) continue;
+            // remove는 원자적 → processOneMinuteLogs와 중복 처리 방지
+            state = oneMinuteAggregates.remove(key);
+            if (state == null) continue;
+            try {
+                log.info("Flushing aggregate for key={} due to partition rebalance", key);
+                processAggregateState(state);
+            } catch (Exception e) {
+                log.error("Failed to flush aggregate for key={}", key, e);
+            }
+        }
     }
 
     @Scheduled(fixedRate = 60000)
     public void processOneMinuteLogs() {
-        if (oneMinuteLogs.isEmpty()) {
+        if (oneMinuteAggregates.isEmpty()) {
             return;
         }
 
         log.info("Starting 1-minute log aggregation");
-        Map<String, List<OnDeviceLogDto>> logsToProcess = new HashMap<>(oneMinuteLogs);
-        oneMinuteLogs.clear();
 
-        logsToProcess.forEach((key, logs) -> {
+        // 복사본 생성 없이 키별로 drain → 피크 시 메모리 2배 문제 해소
+        for (String key : new HashSet<>(oneMinuteAggregates.keySet())) {
+            AggregateState state = oneMinuteAggregates.remove(key);
+            if (state == null) continue;
             try {
-                log.info("Processing logs for key={}, count={}", key, logs.size());
-                processUserRoomLogs(logs);
+                log.info("Processing aggregated logs for key={}, focusLogs={}, totalLogs={}",
+                    key, state.focusLogCount, state.totalLogs);
+                processAggregateState(state);
             } catch (Exception e) {
-                log.error("Failed to process logs for key={}", key, e);
+                log.error("Failed to process aggregated logs for key={}", key, e);
             }
-        });
+        }
 
         log.info("1-minute log aggregation completed");
     }
 
-    private void processUserRoomLogs(List<OnDeviceLogDto> logs) {
-        if (logs.isEmpty()) return;
+    private void processAggregateState(AggregateState state) {
+        if (state.focusLogCount == 0) return;
 
-        OnDeviceLogDto firstLog = logs.get(0);
-        OneMinuteAnalysisResult analysis = analyzeOneMinuteData(logs);
-        saveFocusScore(firstLog.getUserId(), firstLog.getRoomId(), analysis);
+        int averageScore = (int) Math.round(state.scoreSum / state.focusLogCount);
+        int studySeconds = state.focusLogCount * FOCUS_LOG_INTERVAL_SECONDS;
+        String evaluationText = generateEvaluation(state, averageScore, studySeconds);
+
+        log.info("user={}, room={}, avgScore={}, studySeconds={}, yawn={}, gaze={}, head={}",
+            state.userId, state.roomId, averageScore, studySeconds,
+            state.yawnCount, state.gazeDistractionCount, state.headTurnCount);
+
+        saveFocusScore(state.userId, state.roomId, averageScore, studySeconds, state.windowStart, evaluationText);
     }
 
-    private OneMinuteAnalysisResult analyzeOneMinuteData(List<OnDeviceLogDto> logs) {
-        List<Double> focusScores = logs.stream()
-            .filter(l -> l.getFocusScore() != null)
-            .map(OnDeviceLogDto::getFocusScore)
-            .collect(Collectors.toList());
+    private String generateEvaluation(AggregateState state, int averageScore, int studySeconds) {
+        double maxScore = state.scoreMax;
+        double minScore = state.scoreMin == Double.MAX_VALUE ? 0 : state.scoreMin;
 
-        if (focusScores.isEmpty()) {
-            return OneMinuteAnalysisResult.builder()
-                .averageScore(0)
-                .evaluationText("1분간 집중도 데이터가 측정되지 않았습니다.")
-                .confidence(0.0)
-                .yawnCount(0).gazeDistractionCount(0).headTurnCount(0)
-                .totalLogs(logs.size())
-                .build();
-        }
-
-        double avgScore = focusScores.stream().mapToDouble(d -> d).average().orElse(0.0);
-        double maxScore = focusScores.stream().mapToDouble(d -> d).max().orElse(0.0);
-        double minScore = focusScores.stream().mapToDouble(d -> d).min().orElse(0.0);
-
-        long yawnCount = logs.stream().filter(l -> "YAWN".equals(l.getLogType())).count();
-        long gazeDistractionCount = logs.stream().filter(l -> "GAZE_DISTRACTION".equals(l.getLogType())).count();
-        long headTurnCount = logs.stream().filter(l -> "HEAD_TURN".equals(l.getLogType())).count();
-
-        double confidence = calculateConfidence(logs.size(), focusScores.size());
-        String evaluationText = generateEvaluation(avgScore, maxScore, minScore,
-            yawnCount, gazeDistractionCount, headTurnCount, logs.size());
-
-        return OneMinuteAnalysisResult.builder()
-            .averageScore((int) Math.round(avgScore))
-            .evaluationText(evaluationText)
-            .confidence(confidence)
-            .yawnCount((int) yawnCount)
-            .gazeDistractionCount((int) gazeDistractionCount)
-            .headTurnCount((int) headTurnCount)
-            .totalLogs(logs.size())
-            .build();
-    }
-
-    private String generateEvaluation(double avgScore, double maxScore, double minScore,
-                                      long yawnCount, long gazeDistractionCount, long headTurnCount,
-                                      int totalLogs) {
         StringBuilder sb = new StringBuilder();
 
-        if (avgScore >= 80) {
-            sb.append("매우 우수한 집중력을 보였습니다. ");
-        } else if (avgScore >= 70) {
-            sb.append("양호한 집중 상태를 유지했습니다. ");
-        } else if (avgScore >= 50) {
-            sb.append("보통 수준의 집중력을 보였습니다. ");
-        } else if (avgScore >= 30) {
-            sb.append("집중력이 다소 부족했습니다. ");
-        } else {
-            sb.append("집중력이 매우 낮았습니다. ");
-        }
+        if (averageScore >= 80) sb.append("매우 우수한 집중력을 보였습니다. ");
+        else if (averageScore >= 70) sb.append("양호한 집중 상태를 유지했습니다. ");
+        else if (averageScore >= 50) sb.append("보통 수준의 집중력을 보였습니다. ");
+        else if (averageScore >= 30) sb.append("집중력이 다소 부족했습니다. ");
+        else sb.append("집중력이 매우 낮았습니다. ");
 
-        sb.append(String.format("평균 집중도 %.1f점. ", avgScore));
+        sb.append(String.format("평균 집중도 %d점, 실제 학습시간 %d초. ", averageScore, studySeconds));
 
         List<String> issues = new ArrayList<>();
         List<String> positives = new ArrayList<>();
 
-        if (yawnCount > 0) issues.add(String.format("하품 %d회", yawnCount));
-        if (gazeDistractionCount > 2) issues.add(String.format("시선 이탈 %d회", gazeDistractionCount));
-        else if (gazeDistractionCount <= 1) positives.add("시선 집중 우수");
-        if (headTurnCount > 3) issues.add(String.format("고개 돌림 %d회", headTurnCount));
+        if (state.yawnCount > 0) issues.add(String.format("하품 %d회", state.yawnCount));
+        if (state.gazeDistractionCount > 2) issues.add(String.format("시선 이탈 %d회", state.gazeDistractionCount));
+        else if (state.gazeDistractionCount <= 1) positives.add("시선 집중 우수");
+        if (state.headTurnCount > 3) issues.add(String.format("고개 돌림 %d회", state.headTurnCount));
         if ((maxScore - minScore) > 30) issues.add("집중도 변동 심함");
-        else if ((maxScore - minScore) <= 15) positives.add("집중도 안정적");
-        if (totalLogs < 6) issues.add("측정 데이터 부족");
+        else if ((maxScore - minScore) <= 15 && state.focusLogCount > 1) positives.add("집중도 안정적");
+        if (state.focusLogCount < 6) issues.add("측정 데이터 부족");
 
         if (!positives.isEmpty()) sb.append("✅ ").append(String.join(", ", positives)).append(". ");
         if (!issues.isEmpty()) sb.append("⚠️ 개선점: ").append(String.join(", ", issues)).append(". ");
 
-        if (avgScore >= 80 && issues.isEmpty()) sb.append("현재 상태를 유지하세요!");
-        else if (avgScore >= 60) sb.append("조금 더 집중하면 더 좋은 결과를 얻을 수 있습니다.");
+        if (averageScore >= 80 && issues.isEmpty()) sb.append("현재 상태를 유지하세요!");
+        else if (averageScore >= 60) sb.append("조금 더 집중하면 더 좋은 결과를 얻을 수 있습니다.");
         else sb.append("휴식을 취하거나 학습 환경을 점검해보세요.");
 
         return sb.toString();
     }
 
-    private double calculateConfidence(int totalLogs, int validScoreLogs) {
-        if (totalLogs == 0) return 0.0;
-        double base = (double) validScoreLogs / totalLogs;
-        if (totalLogs >= 10) return Math.min(0.95, base + 0.1);
-        if (totalLogs >= 5) return Math.min(0.85, base + 0.05);
-        return base;
-    }
-
-    private void saveFocusScore(Long userId, Long roomId, OneMinuteAnalysisResult analysis) {
+    private void saveFocusScore(Long userId, Long roomId, int averageScore, int studySeconds,
+                                LocalDateTime windowStart, String evaluationText) {
         try {
             CreateFocusScoreRequest request = CreateFocusScoreRequest.builder()
                 .userId(userId)
                 .roomId(roomId)
-                .score(analysis.getAverageScore())
+                .score(averageScore)
+                .studySeconds(studySeconds)
                 .endTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
-                .evaluationText(analysis.getEvaluationText())
+                .windowStart(windowStart)
+                .evaluationText(evaluationText)
                 .build();
 
             FocusScoreResponse response = commonServiceClient.createFocusScore(request);
             log.info("Focus score saved: id={}, user={}, room={}, score={}",
-                response.getId(), userId, roomId, analysis.getAverageScore());
-            log.info("Evaluation: {}", analysis.getEvaluationText());
+                response.getId(), userId, roomId, averageScore);
         } catch (feign.FeignException e) {
-            log.error("Feign error saving focus score: status={}, body={}",
-                e.status(), e.contentUTF8());
+            log.error("Feign error saving focus score: status={}, body={}", e.status(), e.contentUTF8());
         } catch (Exception e) {
             log.error("Failed to save focus score for user={}, room={}", userId, roomId, e);
         }
     }
 
-    @lombok.Data
-    @lombok.Builder
-    public static class OneMinuteAnalysisResult {
-        private Integer averageScore;
-        private String evaluationText;
-        private Double confidence;
-        private Integer yawnCount;
-        private Integer gazeDistractionCount;
-        private Integer headTurnCount;
-        private Integer totalLogs;
+    // 로그 객체 전체 대신 집계값만 유지
+    static class AggregateState {
+        final Long userId;
+        final Long roomId;
+        final int partition;           // 리밸런싱 시 플러시 대상 파악용
+        final LocalDateTime windowStart; // 1분 윈도우 시작 시각 (upsert 키)
+
+        double scoreSum = 0;
+        double scoreMax = Double.MIN_VALUE;
+        double scoreMin = Double.MAX_VALUE;
+        int focusLogCount = 0;
+        int yawnCount = 0;
+        int gazeDistractionCount = 0;
+        int headTurnCount = 0;
+        int totalLogs = 0;
+
+        AggregateState(Long userId, Long roomId, int partition, LocalDateTime windowStart) {
+            this.userId = userId;
+            this.roomId = roomId;
+            this.partition = partition;
+            this.windowStart = windowStart;
+        }
+
+        void update(OnDeviceLogDto log, boolean isFocusLog) {
+            totalLogs++;
+            if (isFocusLog && log.getFocusScore() != null) {
+                double score = log.getFocusScore();
+                scoreSum += score;
+                focusLogCount++;
+                if (score > scoreMax) scoreMax = score;
+                if (score < scoreMin) scoreMin = score;
+            }
+            String logType = log.getLogType();
+            if ("YAWN".equals(logType)) yawnCount++;
+            else if ("GAZE_DISTRACTION".equals(logType)) gazeDistractionCount++;
+            else if ("HEAD_TURN".equals(logType)) headTurnCount++;
+        }
     }
 }

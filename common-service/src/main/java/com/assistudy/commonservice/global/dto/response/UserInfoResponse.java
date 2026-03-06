@@ -1,10 +1,12 @@
 package com.assistudy.commonservice.global.dto.response;
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserInfoResponse {
     private Long id;
     private String email;

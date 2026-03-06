@@ -39,21 +39,36 @@ public class FocusScoreCommandServiceImpl implements FocusScoreCommandService {
 		Room room = roomRepository.findById(request.getRoomId())
 			.orElseThrow(() -> new AnalysisException(AnalysisErrorCode.ROOM_NOT_FOUND));
 
-		FocusScore focusScore = FocusScore.builder()
-			.room(room)
-			.userId(request.getUserId())
-			.date(LocalDateTime.now())
-			.endTime(request.getEndTime())
-			.score(request.getScore())
-			.evaluationText(request.getEvaluationText())
-			.build();
+		// windowStart 기반 upsert: 리밸런싱으로 같은 윈도우가 두 번 저장되는 것을 방지
+		FocusScore focusScore = focusScoreRepository
+			.findByUserIdAndRoomIdAndWindowStart(
+				request.getUserId(), request.getRoomId(), request.getWindowStart())
+			.map(existing -> {
+				existing.mergeWith(
+					request.getStudySeconds(),
+					request.getScore(),
+					request.getEvaluationText(),
+					request.getEndTime()
+				);
+				return existing;
+			})
+			.orElseGet(() -> FocusScore.builder()
+				.room(room)
+				.userId(request.getUserId())
+				.date(LocalDateTime.now())
+				.endTime(request.getEndTime())
+				.score(request.getScore())
+				.studySeconds(request.getStudySeconds())
+				.windowStart(request.getWindowStart())
+				.evaluationText(request.getEvaluationText())
+				.build());
 
 		FocusScore savedFocusScore = focusScoreRepository.save(focusScore);
 
-		// TotalTime 업데이트: focusTime = 점수 * 0.01, totalTime = 60초
+		// TotalTime 업데이트: totalTime = 실제 순공부시간, focusTime = totalTime * (score / 100)
 		LocalDate date = request.getEndTime().toLocalDate();
-		Integer additionalFocusTime = (int) (request.getScore() * 0.01 * 60); // 점수 * 0.01 (100점 만점)
-		Integer additionalTotalTime = 60; // 1분 = 60초
+		Integer additionalTotalTime = request.getStudySeconds();
+		Integer additionalFocusTime = (int) (additionalTotalTime * (request.getScore() / 100.0));
 
 		totalTimeCommandService.updateOrCreateTotalTime(
 			request.getUserId(),

@@ -36,6 +36,7 @@ public class KafkaConsumerService {
     public void handleFocusLog(@Payload String message,
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                                @Header(KafkaHeaders.OFFSET) long offset,
+                               @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                Acknowledgment acknowledgment) {
         try {
             log.info("Received focus log from topic={}, offset={}", topic, offset);
@@ -45,8 +46,7 @@ public class KafkaConsumerService {
                 return;
             }
 
-            oneMinuteAggregationService.collectLog(logDto);
-            performFocusAnalysisIfChanged(logDto);
+            oneMinuteAggregationService.collectLog(logDto, true, partition);
             acknowledgment.acknowledge();
 
         } catch (Exception e) {
@@ -59,6 +59,7 @@ public class KafkaConsumerService {
     public void handleBehaviorLog(@Payload String message,
                                   @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                                   @Header(KafkaHeaders.OFFSET) long offset,
+                                  @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                   Acknowledgment acknowledgment) {
         try {
             log.info("Received behavior log from topic={}, offset={}", topic, offset);
@@ -68,8 +69,7 @@ public class KafkaConsumerService {
                 return;
             }
 
-            oneMinuteAggregationService.collectLog(logDto);
-            performBehaviorAnalysisIfChanged(logDto);
+            oneMinuteAggregationService.collectLog(logDto, false, partition);
             acknowledgment.acknowledge();
 
         } catch (Exception e) {
@@ -99,8 +99,11 @@ public class KafkaConsumerService {
         }
     }
 
+    // 즉시 분석 로직 - 현재 호출 안 됨 (1분 집계로 대체)
+    // 필요 시 handleFocusLog/handleBehaviorLog에서 호출 가능
+    @SuppressWarnings("unused")
     private void performFocusAnalysisIfChanged(OnDeviceLogDto logDto) {
-        String key = logDto.getUserId() + "-" + logDto.getRoomId();
+        String key = logDto.getUserId() + "_" + logDto.getRoomId();
         Double lastScore = lastFocusScores.get(key);
 
         if (lastScore != null && Math.abs(logDto.getFocusScore() - lastScore) < 5.0) {
@@ -115,9 +118,6 @@ public class KafkaConsumerService {
     private void performFocusAnalysis(OnDeviceLogDto logDto) {
         try {
             FocusAnalysisResult analysis = analysisService.analyzeFocusData(logDto);
-
-            log.info("Focus analysis completed: user={}, score={}, trend={}",
-                logDto.getUserId(), analysis.getCurrentScore(), analysis.getTrend());
 
             CreateAnalysisResultRequest request = CreateAnalysisResultRequest.builder()
                 .userId(logDto.getUserId())
@@ -136,28 +136,17 @@ public class KafkaConsumerService {
                 ))
                 .build();
 
-            CreateAnalysisResultResponse response;
-            try {
-                response = commonServiceClient.createAnalysisResult(request);
-            } catch (feign.FeignException e) {
-                log.error("Feign error calling createAnalysisResult: status={}, body={}",
-                    e.status(), e.contentUTF8());
-                throw e;
-            }
-
-            if (response.getId() != null && response.getId() > 0) {
-                log.info("Focus analysis saved: id={}, user={}", response.getId(), logDto.getUserId());
-            }
-
-            saveLogEntry(logDto);
+            CreateAnalysisResultResponse response = commonServiceClient.createAnalysisResult(request);
+            log.info("Focus analysis saved: id={}, user={}", response.getId(), logDto.getUserId());
 
         } catch (Exception e) {
             log.error("Focus analysis failed for user={}: {}", logDto.getUserId(), e.getMessage(), e);
         }
     }
 
+    @SuppressWarnings("unused")
     private void performBehaviorAnalysisIfChanged(OnDeviceLogDto logDto) {
-        String key = logDto.getUserId() + "-" + logDto.getRoomId();
+        String key = logDto.getUserId() + "_" + logDto.getRoomId();
         String current = logDto.getBehaviorText() != null ? logDto.getBehaviorText() : "";
         String last = lastBehaviorTexts.get(key);
 
@@ -186,21 +175,27 @@ public class KafkaConsumerService {
                 ))
                 .build();
 
-            CreateAnalysisResultResponse response;
-            try {
-                response = commonServiceClient.createAnalysisResult(request);
-            } catch (feign.FeignException e) {
-                log.error("Feign error calling createAnalysisResult (behavior): status={}, body={}",
-                    e.status(), e.contentUTF8());
-                throw e;
-            }
+            CreateAnalysisResultResponse response = commonServiceClient.createAnalysisResult(request);
             log.info("Behavior analysis saved: id={}, user={}", response.getId(), logDto.getUserId());
-
-            saveLogEntry(logDto);
 
         } catch (Exception e) {
             log.error("Behavior analysis failed for user={}: {}", logDto.getUserId(), e.getMessage(), e);
         }
+    }
+
+    private String analyzeBehaviorText(String behaviorText) {
+        if (behaviorText == null || behaviorText.isBlank()) {
+            return "행동 정보가 없습니다.";
+        }
+        String lower = behaviorText.toLowerCase();
+        if (lower.contains("고개") || lower.contains("돌린다") || lower.contains("시선")) {
+            return "주의가 분산되었을 가능성이 있습니다. 모니터에 집중해보세요.";
+        } else if (lower.contains("하품") || lower.contains("졸") || lower.contains("피곤")) {
+            return "피로감이 감지되었습니다. 잠시 휴식을 취해보세요.";
+        } else if (lower.contains("집중") || lower.contains("공부") || lower.contains("학습")) {
+            return "좋은 학습 자세를 유지하고 있습니다.";
+        }
+        return String.format("행동 분석: %s", behaviorText);
     }
 
     private void saveLogEntry(OnDeviceLogDto logDto) {
@@ -261,18 +256,4 @@ public class KafkaConsumerService {
         return valid;
     }
 
-    private String analyzeBehaviorText(String behaviorText) {
-        if (behaviorText == null || behaviorText.isBlank()) {
-            return "행동 정보가 없습니다.";
-        }
-        String lower = behaviorText.toLowerCase();
-        if (lower.contains("고개") || lower.contains("돌린다") || lower.contains("시선")) {
-            return "주의가 분산되었을 가능성이 있습니다. 모니터에 집중해보세요.";
-        } else if (lower.contains("하품") || lower.contains("졸") || lower.contains("피곤")) {
-            return "피로감이 감지되었습니다. 잠시 휴식을 취해보세요.";
-        } else if (lower.contains("집중") || lower.contains("공부") || lower.contains("학습")) {
-            return "좋은 학습 자세를 유지하고 있습니다.";
-        }
-        return String.format("행동 분석: %s", behaviorText);
-    }
 }
