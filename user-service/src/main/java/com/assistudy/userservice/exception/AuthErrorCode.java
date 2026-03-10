@@ -19,7 +19,8 @@ public enum AuthErrorCode implements BaseErrorCode {
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "AUTH007", "사용자를 찾을 수 없습니다."),
 
     INVALID_PROVIDER(HttpStatus.BAD_REQUEST, "SOCIAL001", "올바르지 않은 제공자입니다."),
-    DIFFERENT_PROVIDER_EXISTS(HttpStatus.CONFLICT, "SOCIAL002", "이미 다른 소셜 로그인으로 가입된 이메일입니다.");
+    DIFFERENT_PROVIDER_EXISTS(HttpStatus.CONFLICT, "SOCIAL002", "이미 다른 소셜 로그인으로 가입된 이메일입니다."),
+    OAUTH_CODE_INVALID(HttpStatus.BAD_REQUEST, "SOCIAL003", "유효하지 않거나 만료된 소셜 인증 코드입니다.");
 
     private final HttpStatus status;
     private final String code;

@@ -15,33 +15,33 @@ import java.util.Map;
 public class CommonServiceClientFallback implements CommonServiceClient {
     
     @Override
-    public CreateAnalysisResultResponse createAnalysisResult(CreateAnalysisResultRequest request) {
-        log.error("Common Service is unavailable - Analysis Result fallback triggered for user: {}, room: {}", 
+    public CreateAnalysisResultResponse createAnalysisResult(String userId, CreateAnalysisResultRequest request) {
+        log.error("Common Service is unavailable - Analysis Result fallback triggered for user: {}, room: {}",
                 request.getUserId(), request.getRoomId());
-        
+
         return CreateAnalysisResultResponse.builder()
                 .id(-1L)
                 .status("FALLBACK")
                 .message("Common Service is temporarily unavailable")
                 .build();
     }
-    
+
     @Override
-    public Map<String, String> createLogEntry(CreateLogEntryRequest request) {
-        log.error("Common Service is unavailable - Log Entry fallback triggered for user: {}, room: {}", 
+    public Map<String, String> createLogEntry(String userId, CreateLogEntryRequest request) {
+        log.error("Common Service is unavailable - Log Entry fallback triggered for user: {}, room: {}",
                 request.getUserId(), request.getRoomId());
-        
+
         return Map.of(
                 "status", "FALLBACK",
                 "message", "Common Service is temporarily unavailable"
         );
     }
-    
+
     @Override
-    public FocusScoreResponse createFocusScore(CreateFocusScoreRequest request) {
-        log.error("Common Service is unavailable - Focus Score fallback triggered for room: {}", 
+    public FocusScoreResponse createFocusScore(String userId, CreateFocusScoreRequest request) {
+        log.error("Common Service is unavailable - Focus Score fallback triggered for room: {}",
                 request.getRoomId());
-        
+
         return FocusScoreResponse.builder()
                 .id(-1L)
                 .roomId(request.getRoomId())
