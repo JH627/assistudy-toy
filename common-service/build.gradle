@@ -35,6 +35,8 @@ dependencies {
 	// Spring Boot Actuator for refresh
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
 	// Prometheus metrics
 	implementation 'io.micrometer:micrometer-registry-prometheus'
 
