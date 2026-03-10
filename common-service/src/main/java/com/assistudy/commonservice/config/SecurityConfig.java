@@ -1,6 +1,6 @@
 package com.assistudy.commonservice.config;
 
-import com.assistudy.commonservice.config.filter.InternalAuthFilter;
+import com.assistudy.shared.filter.InternalAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,10 +15,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final InternalAuthFilter internalAuthFilter;
-
-    public SecurityConfig(InternalAuthFilter internalAuthFilter) {
-        this.internalAuthFilter = internalAuthFilter;
+    @Bean
+    public InternalAuthFilter internalAuthFilter() {
+        return new InternalAuthFilter();
     }
 
     @Bean
@@ -27,7 +26,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(internalAuthFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
