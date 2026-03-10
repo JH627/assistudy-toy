@@ -1,18 +1,64 @@
 package com.assistudy.apigatewayservice.config;
 
 import com.assistudy.apigatewayservice.filter.JwtAuthenticationFilter;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
+import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import reactor.core.publisher.Mono;
 
 @Configuration
 public class GatewayConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final RedisRateLimiter loginRateLimiter;
+	private final RedisRateLimiter refreshRateLimiter;
+	private final KeyResolver ipKeyResolver;
 
-	public GatewayConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+	public GatewayConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+			RedisRateLimiter loginRateLimiter,
+			RedisRateLimiter refreshRateLimiter,
+			KeyResolver ipKeyResolver) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+		this.loginRateLimiter = loginRateLimiter;
+		this.refreshRateLimiter = refreshRateLimiter;
+		this.ipKeyResolver = ipKeyResolver;
+	}
+
+	/**
+	 * /internal/ 경로 외부 접근 차단 (log-process-service → common-service 내부 전용)
+	 */
+	@Bean
+	@Order(-1)
+	public GlobalFilter blockInternalPathsFilter() {
+		return (exchange, chain) -> {
+			String path = exchange.getRequest().getURI().getPath();
+			if (path.contains("/internal/") || path.endsWith("/internal")) {
+				exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+				return exchange.getResponse().setComplete();
+			}
+			return chain.filter(exchange);
+		};
+	}
+
+	/**
+	 * 모든 응답에 보안 헤더 추가
+	 */
+	@Bean
+	public GlobalFilter securityHeadersFilter() {
+		return (exchange, chain) -> chain.filter(exchange).then(Mono.fromRunnable(() -> {
+			HttpHeaders headers = exchange.getResponse().getHeaders();
+			headers.set("X-Content-Type-Options", "nosniff");
+			headers.set("X-Frame-Options", "DENY");
+			headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+			headers.set("X-XSS-Protection", "1; mode=block");
+		}));
 	}
 
 	@Bean
@@ -43,6 +89,12 @@ public class GatewayConfig {
 				.uri("lb://user-service"))
 
 			.route("user-login", r -> r.path("/users/login")
+				.filters(f -> f
+					.requestRateLimiter(c -> {
+						c.setRateLimiter(loginRateLimiter);
+						c.setKeyResolver(ipKeyResolver);
+					})
+				)
 				.uri("lb://user-service"))
 
 			.route("user-check-email", r -> r.path("/users/check-email")
@@ -52,9 +104,19 @@ public class GatewayConfig {
 				.uri("lb://user-service"))
 
 			.route("user-refresh-token", r -> r.path("/users/refresh-token")
+				.filters(f -> f
+					.requestRateLimiter(c -> {
+						c.setRateLimiter(refreshRateLimiter);
+						c.setKeyResolver(ipKeyResolver);
+					})
+				)
 				.uri("lb://user-service"))
 
 			.route("user-social-login-guide", r -> r.path("/users/social-login-guide")
+				.uri("lb://user-service"))
+
+			// OAuth2 소셜 토큰 교환 (공개 - nonce 코드로 access token 교환)
+			.route("user-social-token", r -> r.path("/users/social-token")
 				.uri("lb://user-service"))
 
 			// =============================
@@ -166,7 +228,7 @@ public class GatewayConfig {
 				.uri("lb://common-service"))
 
 			// =============================
-			// log-send-service - Public APIs (인증 불필요)
+			// log-send-service
 			// =============================
 			.route("log-send-ondevice", r -> r.path("/logs/ondevice")
 				.filters(f -> f.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
@@ -175,9 +237,6 @@ public class GatewayConfig {
 			.route("log-send-health", r -> r.path("/logs/health")
 				.uri("lb://log-send-service"))
 
-			// =============================
-			// log-send-service - Service Prefix Routes (인증 불필요)
-			// =============================
 			.route("log-send-service", r -> r.path("/log-send-service/**")
 				.filters(f -> f
 					.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
