@@ -146,7 +146,7 @@ public class OneMinuteAggregationService {
                 .evaluationText(evaluationText)
                 .build();
 
-            FocusScoreResponse response = commonServiceClient.createFocusScore(request);
+            FocusScoreResponse response = commonServiceClient.createFocusScore(String.valueOf(userId), request);
             log.info("Focus score saved: id={}, user={}, room={}, score={}",
                 response.getId(), userId, roomId, averageScore);
         } catch (feign.FeignException e) {

@@ -136,7 +136,7 @@ public class KafkaConsumerService {
                 ))
                 .build();
 
-            CreateAnalysisResultResponse response = commonServiceClient.createAnalysisResult(request);
+            CreateAnalysisResultResponse response = commonServiceClient.createAnalysisResult(String.valueOf(logDto.getUserId()), request);
             log.info("Focus analysis saved: id={}, user={}", response.getId(), logDto.getUserId());
 
         } catch (Exception e) {
@@ -175,7 +175,7 @@ public class KafkaConsumerService {
                 ))
                 .build();
 
-            CreateAnalysisResultResponse response = commonServiceClient.createAnalysisResult(request);
+            CreateAnalysisResultResponse response = commonServiceClient.createAnalysisResult(String.valueOf(logDto.getUserId()), request);
             log.info("Behavior analysis saved: id={}, user={}", response.getId(), logDto.getUserId());
 
         } catch (Exception e) {
@@ -216,7 +216,7 @@ public class KafkaConsumerService {
 
             Map<String, String> response;
             try {
-                response = commonServiceClient.createLogEntry(logRequest);
+                response = commonServiceClient.createLogEntry(String.valueOf(logDto.getUserId()), logRequest);
             } catch (feign.FeignException e) {
                 log.error("Feign error calling createLogEntry: status={}, body={}",
                     e.status(), e.contentUTF8());
