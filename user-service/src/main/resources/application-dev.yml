@@ -61,16 +61,16 @@ oauth:
 jwt:
   private-key: ${JWT_PRIVATE_KEY}
   public-key: ${JWT_PUBLIC_KEY}
-  redirect: ${JWT_SOCIAL_REDIRECT_URI:http://localhost:8080/login/social?access_token=%s&role=%s}
+  redirect: ${JWT_SOCIAL_REDIRECT_URI:http://localhost:8080/login/social?code=%s&role=%s}
   access-token:
-    expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:86400000}
+    expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:1800000}
   refresh-token:
     expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
 
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+      defaultZone: ${EUREKA_SERVER_URL:http://eureka:eureka@localhost:8761/eureka}
     fetch-registry: true
     register-with-eureka: true
   instance:

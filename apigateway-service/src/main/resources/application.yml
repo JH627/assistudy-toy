@@ -9,10 +9,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,refresh,prometheus
+        include: health,info,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: never
 
 springdoc:
   swagger-ui:
