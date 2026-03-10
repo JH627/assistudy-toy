@@ -1,6 +1,6 @@
 package com.assistudy.logsendservice.config;
 
-import com.assistudy.logsendservice.annotation.resolver.LoginUserArgumentResolver;
+import com.assistudy.shared.annotation.resolver.LoginUserArgumentResolver;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;

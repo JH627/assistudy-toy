@@ -1,6 +1,6 @@
 package com.assistudy.logsendservice.config;
 
-import com.assistudy.logsendservice.config.filter.InternalAuthFilter;
+import com.assistudy.shared.filter.InternalAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,14 +9,15 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.Set;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final InternalAuthFilter internalAuthFilter;
-
-    public SecurityConfig(InternalAuthFilter internalAuthFilter) {
-        this.internalAuthFilter = internalAuthFilter;
+    @Bean
+    public InternalAuthFilter internalAuthFilter() {
+        return new InternalAuthFilter(Set.of("/logs/health"));
     }
 
     @Bean
@@ -25,7 +26,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(internalAuthFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -10,4 +10,4 @@ public class UserInfoResponse {
     private String email;
     private String nickname;
     private Integer profileImage;
-} 
+}

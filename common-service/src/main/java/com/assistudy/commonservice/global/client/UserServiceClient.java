@@ -1,6 +1,6 @@
 package com.assistudy.commonservice.global.client;
 
-import com.assistudy.commonservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.response.ApiResponse;
 import com.assistudy.commonservice.global.dto.response.UserInfoResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;

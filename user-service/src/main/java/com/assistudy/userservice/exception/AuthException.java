@@ -1,7 +1,7 @@
 package com.assistudy.userservice.exception;
 
-import com.assistudy.userservice.global.exception.CustomException;
-import com.assistudy.userservice.global.exception.code.BaseErrorCode;
+import com.assistudy.shared.exception.CustomException;
+import com.assistudy.shared.exception.code.BaseErrorCode;
 
 public class AuthException extends CustomException {
     public AuthException(BaseErrorCode code) {

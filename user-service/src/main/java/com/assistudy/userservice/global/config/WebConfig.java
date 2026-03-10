@@ -1,6 +1,6 @@
 package com.assistudy.userservice.global.config;
 
-import com.assistudy.userservice.global.annotation.resolver.LoginUserArgumentResolver;
+import com.assistudy.shared.annotation.resolver.LoginUserArgumentResolver;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;

@@ -1,7 +1,7 @@
 package com.assistudy.commonservice.homework.exception;
 
-import com.assistudy.commonservice.global.dto.response.ApiResponse;
-import com.assistudy.commonservice.global.exception.code.BaseErrorCode;
+import com.assistudy.shared.response.ApiResponse;
+import com.assistudy.shared.exception.code.BaseErrorCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;

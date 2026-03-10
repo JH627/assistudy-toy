@@ -1,7 +1,7 @@
 package com.assistudy.userservice.controller;
 
 import com.assistudy.userservice.dto.response.UserInfoResponse;
-import com.assistudy.userservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.response.ApiResponse;
 import com.assistudy.userservice.service.query.AuthQueryService;
 import com.assistudy.userservice.service.query.UserQueryService;
 import io.swagger.v3.oas.annotations.Hidden;

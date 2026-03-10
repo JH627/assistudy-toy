@@ -1,7 +1,7 @@
 package com.assistudy.commonservice.time.controller;
 
-import com.assistudy.commonservice.global.annotation.LoginUser;
-import com.assistudy.commonservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.annotation.LoginUser;
+import com.assistudy.shared.response.ApiResponse;
 import com.assistudy.commonservice.room.entity.enums.RoomType;
 import com.assistudy.commonservice.time.doc.TimeApiDocumentation;
 import com.assistudy.commonservice.time.dto.response.RoomsByDateResponse;

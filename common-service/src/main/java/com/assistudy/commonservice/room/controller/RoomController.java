@@ -1,7 +1,7 @@
 package com.assistudy.commonservice.room.controller;
 
-import com.assistudy.commonservice.global.annotation.LoginUser;
-import com.assistudy.commonservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.annotation.LoginUser;
+import com.assistudy.shared.response.ApiResponse;
 import com.assistudy.commonservice.room.doc.RoomApiDocumentation;
 import com.assistudy.commonservice.room.dto.request.CreateRoomRequest;
 import com.assistudy.commonservice.room.dto.request.JoinRoomRequest;

@@ -1,7 +1,7 @@
 package com.assistudy.logprocessservice.controller;
 
 import com.assistudy.logprocessservice.dto.OnDeviceLogDto;
-import com.assistudy.logprocessservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.response.ApiResponse;
 import com.assistudy.logprocessservice.service.AnalysisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
