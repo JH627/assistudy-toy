@@ -1,6 +1,6 @@
 package com.assistudy.commonservice.time.exception;
 
-import com.assistudy.commonservice.global.exception.CustomException;
+import com.assistudy.shared.exception.CustomException;
 
 public class TimeException extends CustomException {
 

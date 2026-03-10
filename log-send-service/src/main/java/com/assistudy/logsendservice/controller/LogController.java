@@ -2,7 +2,7 @@ package com.assistudy.logsendservice.controller;
 
 import com.assistudy.logsendservice.dto.request.OnDeviceLogRequest;
 import com.assistudy.logsendservice.service.LogSendService;
-import com.assistudy.logsendservice.annotation.LoginUser;
+import com.assistudy.shared.annotation.LoginUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

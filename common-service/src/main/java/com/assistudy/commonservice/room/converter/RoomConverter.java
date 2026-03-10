@@ -130,7 +130,7 @@ public class RoomConverter {
 	 * Class 참가자 응답 변환
 	 */
 	public static GetMyClassRoomsAsParticipantResponse.ClassRoomParticipantInfo toClassRoomParticipantInfo(Room room, Integer currentParticipants,
-				String hostNickname, String hostProfileImage, Boolean isJoined) {
+				String hostNickname, Integer hostProfileImage, Boolean isJoined) {
 		return GetMyClassRoomsAsParticipantResponse.ClassRoomParticipantInfo.builder()
 				.id(room.getId())
 				.name(room.getName())

@@ -32,7 +32,7 @@ public class RoomDetailResponse {
     public static class RoomHostInfo {
         private Long id;
         private String nickname;
-        private String profileImg;
+        private Integer profileImg;
 
         public static RoomHostInfo from(UserInfoResponse userInfo) {
             return RoomHostInfo.builder()
@@ -48,7 +48,7 @@ public class RoomDetailResponse {
     public static class RoomParticipantInfo {
         private Long id;
         private String nickname;
-        private String profileImg;
+        private Integer profileImg;
         private Boolean isCameraOn;
         private Boolean isMicOn;
         private Boolean isScreenSharing;

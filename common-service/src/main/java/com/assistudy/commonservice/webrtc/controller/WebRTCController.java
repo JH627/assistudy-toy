@@ -1,10 +1,10 @@
 package com.assistudy.commonservice.webrtc.controller;
 
-import com.assistudy.commonservice.global.annotation.LoginUser;
+import com.assistudy.shared.annotation.LoginUser;
 import com.assistudy.commonservice.webrtc.dto.request.CreateTokenRequest;
 import com.assistudy.commonservice.webrtc.dto.response.TokenResponse;
 import com.assistudy.commonservice.webrtc.service.WebRTCService;
-import com.assistudy.commonservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

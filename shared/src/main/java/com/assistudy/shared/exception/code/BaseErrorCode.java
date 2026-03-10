@@ -1,6 +1,6 @@
-package com.assistudy.userservice.global.exception.code;
+package com.assistudy.shared.exception.code;
 
-import com.assistudy.userservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 
 public interface BaseErrorCode {

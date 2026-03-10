@@ -33,7 +33,7 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
         configProps.put(ProducerConfig.LINGER_MS_CONFIG, 5); // 5ms 대기 후 배치 전송
         configProps.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
-        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "lz4");
         
         return new DefaultKafkaProducerFactory<>(configProps);
     }

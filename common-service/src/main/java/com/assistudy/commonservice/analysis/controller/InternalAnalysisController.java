@@ -7,7 +7,7 @@ import com.assistudy.commonservice.analysis.dto.response.CreateAnalysisResultRes
 import com.assistudy.commonservice.analysis.dto.response.FocusScoreResponse;
 import com.assistudy.commonservice.analysis.service.command.AnalysisCommandService;
 import com.assistudy.commonservice.analysis.service.command.FocusScoreCommandService;
-import com.assistudy.commonservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

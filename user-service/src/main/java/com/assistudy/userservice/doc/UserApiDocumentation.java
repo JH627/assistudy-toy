@@ -98,7 +98,7 @@ public class UserApiDocumentation {
                     description = "회원가입 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = com.assistudy.userservice.global.dto.response.ApiResponse.class),
+                            schema = @Schema(implementation = com.assistudy.shared.response.ApiResponse.class),
                             examples = @ExampleObject(
                                     name = "성공 응답",
                                     value = """
@@ -530,7 +530,7 @@ public class UserApiDocumentation {
                     description = "프로필 조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = com.assistudy.userservice.global.dto.response.ApiResponse.class),
+                            schema = @Schema(implementation = com.assistudy.shared.response.ApiResponse.class),
                             examples = @ExampleObject(
                                     name = "성공 응답",
                                     value = """
@@ -737,7 +737,7 @@ public class UserApiDocumentation {
                     description = "사용자 정보 조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = com.assistudy.userservice.global.dto.response.ApiResponse.class),
+                            schema = @Schema(implementation = com.assistudy.shared.response.ApiResponse.class),
                             examples = @ExampleObject(
                                     name = "성공 응답",
                                     value = """
@@ -790,7 +790,7 @@ public class UserApiDocumentation {
                     description = "사용자 정보 조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = com.assistudy.userservice.global.dto.response.ApiResponse.class),
+                            schema = @Schema(implementation = com.assistudy.shared.response.ApiResponse.class),
                             examples = @ExampleObject(
                                     name = "성공 응답",
                                     value = """

@@ -25,7 +25,7 @@ public class GetMyClassRoomsAsParticipantResponse {
 		private Integer maxParticipants;
 		private Integer currentParticipants;
 		private String hostNickname;
-		private String hostProfileImage;
+		private Integer hostProfileImage;
 		private LocalDateTime createdAt;
 		private Boolean isJoined; // 내가 참가 중인지 여부
 	}

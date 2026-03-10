@@ -1,7 +1,7 @@
 package com.assistudy.commonservice.homework.controller;
 
-import com.assistudy.commonservice.global.annotation.LoginUser;
-import com.assistudy.commonservice.global.dto.response.ApiResponse;
+import com.assistudy.shared.annotation.LoginUser;
+import com.assistudy.shared.response.ApiResponse;
 import com.assistudy.commonservice.homework.doc.FeedbackApiDocumentation;
 import com.assistudy.commonservice.homework.dto.request.CreateFeedbackRequest;
 import com.assistudy.commonservice.homework.dto.request.DeleteFeedbackRequest;

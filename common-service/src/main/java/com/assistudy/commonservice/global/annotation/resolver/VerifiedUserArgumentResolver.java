@@ -2,8 +2,8 @@ package com.assistudy.commonservice.global.annotation.resolver;
 
 import com.assistudy.commonservice.global.annotation.VerifiedUser;
 import com.assistudy.commonservice.global.client.UserServiceClient;
-import com.assistudy.commonservice.global.exception.CustomException;
-import com.assistudy.commonservice.global.exception.code.GeneralErrorCode;
+import com.assistudy.shared.exception.CustomException;
+import com.assistudy.shared.exception.code.GeneralErrorCode;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.MethodParameter;

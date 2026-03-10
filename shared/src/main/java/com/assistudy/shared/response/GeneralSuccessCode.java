@@ -1,4 +1,4 @@
-package com.assistudy.commonservice.global.exception.code;
+package com.assistudy.shared.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

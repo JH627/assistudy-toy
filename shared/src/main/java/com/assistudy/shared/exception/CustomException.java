@@ -1,15 +1,14 @@
-package com.assistudy.commonservice.global.exception;
+package com.assistudy.shared.exception;
 
-import com.assistudy.commonservice.global.exception.code.BaseErrorCode;
+import com.assistudy.shared.exception.code.BaseErrorCode;
 import lombok.Getter;
 
 @Getter
 public class CustomException extends RuntimeException {
 
-    private BaseErrorCode code;
+    private final BaseErrorCode code;
 
     public CustomException(BaseErrorCode code) {
         this.code = code;
     }
-
 }

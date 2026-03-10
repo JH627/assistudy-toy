@@ -117,7 +117,7 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 					int currentParticipants = roomParticipantRepository.countByRoomIdAndIsDeletedFalse(room.getId());
 					UserInfoResponse hostInfo = hostInfoMap.get(room.getHostUserId());
 					String hostNickname = hostInfo != null ? hostInfo.getNickname() : "Unknown";
-					String hostProfileImage = hostInfo != null ? hostInfo.getProfileImage() : null;
+					Integer hostProfileImage = hostInfo != null ? hostInfo.getProfileImage() : null;
 
 					return RoomConverter.toClassRoomParticipantInfo(room, currentParticipants, hostNickname, hostProfileImage, true);
 				})

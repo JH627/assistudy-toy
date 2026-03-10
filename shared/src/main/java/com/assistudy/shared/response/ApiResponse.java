@@ -1,15 +1,14 @@
-package com.assistudy.commonservice.global.dto.response;
+package com.assistudy.shared.response;
 
-import com.assistudy.commonservice.global.exception.code.BaseSuccessCode;
-import com.assistudy.commonservice.global.exception.code.GeneralSuccessCode;
-import org.springframework.http.HttpStatus;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.http.HttpStatus;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 @JsonPropertyOrder({"status", "code", "message", "result"})
 @ToString

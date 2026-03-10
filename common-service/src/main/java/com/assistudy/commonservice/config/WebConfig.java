@@ -1,6 +1,6 @@
 package com.assistudy.commonservice.config;
 
-import com.assistudy.commonservice.global.annotation.resolver.LoginUserArgumentResolver;
+import com.assistudy.shared.annotation.resolver.LoginUserArgumentResolver;
 import com.assistudy.commonservice.global.annotation.resolver.VerifiedUserArgumentResolver;
 import com.assistudy.commonservice.global.client.UserServiceClient;
 

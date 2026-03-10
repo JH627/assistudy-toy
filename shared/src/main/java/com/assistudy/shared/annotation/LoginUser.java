@@ -1,4 +1,4 @@
-package com.assistudy.commonservice.global.annotation;
+package com.assistudy.shared.annotation;
 
 import io.swagger.v3.oas.annotations.Parameter;
 

@@ -1,4 +1,4 @@
-package com.assistudy.userservice.global.exception.code;
+package com.assistudy.shared.response;
 
 import org.springframework.http.HttpStatus;
 

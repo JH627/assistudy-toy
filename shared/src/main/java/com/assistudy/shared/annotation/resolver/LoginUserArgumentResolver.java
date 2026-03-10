@@ -1,6 +1,7 @@
-package com.assistudy.logsendservice.annotation.resolver;
+package com.assistudy.shared.annotation.resolver;
 
-import com.assistudy.logsendservice.annotation.LoginUser;
+import com.assistudy.shared.annotation.LoginUser;
+import com.assistudy.shared.constants.HeaderConstants;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -9,8 +10,6 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver {
-
-    static final String USER_ID_HEADER = "X-User-Id";
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -25,10 +24,10 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
             NativeWebRequest webRequest,
             WebDataBinderFactory binderFactory) throws Exception {
 
-        String headerValue = webRequest.getHeader(USER_ID_HEADER);
+        String headerValue = webRequest.getHeader(HeaderConstants.USER_ID_HEADER);
 
         if (headerValue == null) {
-            throw new MissingRequestHeaderException("USER_ID_HEADER", parameter);
+            throw new MissingRequestHeaderException(HeaderConstants.USER_ID_HEADER, parameter);
         }
 
         return Long.parseLong(headerValue);
