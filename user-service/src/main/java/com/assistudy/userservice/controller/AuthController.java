@@ -80,10 +80,33 @@ public class AuthController {
     @PostMapping("/refresh-token")
     @UserApiDocumentation.RefreshTokenApi
     public ResponseEntity<?> refreshToken(@CookieValue(name = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
-        String newAccessToken = authCommandService.reGenerateAccessToken(refreshToken);
+        LoginUserResponse tokens = authCommandService.reGenerateTokens(refreshToken);
 
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer " + newAccessToken);
+        httpHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.getAccessToken());
+
+        // Refresh Token Rotation: 새 refresh token도 쿠키로 설정
+        ResponseCookie responseCookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, tokens.getRefreshToken())
+                .maxAge(REFRESH_TOKEN_DURATION)
+                .sameSite("Lax")
+                .httpOnly(HTTP_ONLY)
+                .secure(SECURE)
+                .path(COOKIE_PATH)
+                .build();
+
+        httpHeaders.add(HttpHeaders.SET_COOKIE, responseCookie.toString());
+
+        return ResponseEntity.ok()
+                .headers(httpHeaders)
+                .build();
+    }
+
+    @GetMapping("/social-token")
+    public ResponseEntity<?> socialToken(@RequestParam String code) {
+        String accessToken = authCommandService.exchangeSocialToken(code);
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         return ResponseEntity.ok()
                 .headers(httpHeaders)

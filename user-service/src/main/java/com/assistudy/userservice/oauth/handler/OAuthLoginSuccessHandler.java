@@ -16,6 +16,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -28,10 +29,12 @@ public class OAuthLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHand
 
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final String BLACKLIST_PREFIX = "jwt:blacklist:";
 
-    // Cookie 설정 상수
-    private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+    // AuthController와 통일된 쿠키명
+    private static final String REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
+    private static final String BLACKLIST_PREFIX = "jwt:blacklist:";
+    private static final String OAUTH_CODE_PREFIX = "oauth:code:";
+    private static final long OAUTH_CODE_TTL_SECONDS = 30L;
     private static final boolean HTTP_ONLY = true;
     private static final boolean SECURE = true;
     private static final String COOKIE_PATH = "/";
@@ -49,26 +52,26 @@ public class OAuthLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHand
             redisTemplate.expire(refreshTokenKey, jwtUtil.getRemainingExpirationTime(existingRefreshToken), TimeUnit.SECONDS);
         }
 
-        // 새 리프레시 토큰 발급
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-        
-        // 액세스 토큰 발급
         String accessToken = jwtUtil.generateAccessToken(user.getId());
 
-        // 리프레시 토큰을 쿠키에 설정
+        // 리프레시 토큰 HttpOnly 쿠키에 설정
         ResponseCookie responseCookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .maxAge(jwtUtil.getRemainingExpirationTime(refreshToken))
+                .sameSite("Lax")
                 .httpOnly(HTTP_ONLY)
                 .secure(SECURE)
                 .path(COOKIE_PATH)
                 .build();
-
-        // 응답 헤더에 쿠키와 액세스 토큰 추가
         response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
-        response.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
-        // 액세스 토큰을 담아 리다이렉트
-        String redirectUri = String.format(REDIRECT_URI, accessToken, user.getRole());
+        // 액세스 토큰은 URL에 직접 노출하지 않고, 30초 유효 nonce 코드로 교환
+        String nonce = UUID.randomUUID().toString().replace("-", "");
+        redisTemplate.opsForValue().set(OAUTH_CODE_PREFIX + nonce, accessToken);
+        redisTemplate.expire(OAUTH_CODE_PREFIX + nonce, OAUTH_CODE_TTL_SECONDS, TimeUnit.SECONDS);
+
+        // code(nonce)와 role만 URL에 포함
+        String redirectUri = String.format(REDIRECT_URI, nonce, user.getRole());
         getRedirectStrategy().sendRedirect(request, response, redirectUri);
     }
 

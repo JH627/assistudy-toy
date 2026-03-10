@@ -20,10 +20,18 @@ public interface AuthCommandService {
     void logout(String authorization, String refreshToken);
     
     /**
-     * refreshToken 재생성
+     * refreshToken으로 accessToken + refreshToken 재발급 (Rotation)
      * @param refreshToken 유효한 리프레시 토큰
-     * @return 새로 생성된 액세스 토큰
+     * @return 새로 생성된 액세스 토큰 + 리프레시 토큰
      * @throws RuntimeException 리프레시 토큰이 유효하지 않은 경우
      */
-    String reGenerateAccessToken(String refreshToken);
+    LoginUserResponse reGenerateTokens(String refreshToken);
+
+    /**
+     * OAuth2 소셜 로그인 후 nonce 코드로 액세스 토큰 교환
+     * @param code 30초 유효한 일회성 nonce 코드
+     * @return 액세스 토큰
+     * @throws RuntimeException 코드가 유효하지 않거나 만료된 경우
+     */
+    String exchangeSocialToken(String code);
 }
