@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 @JsonIgnoreProperties(ignoreUnknown = true) // 알려지지 않은 필드 무시
 public class OnDeviceLogRequest {
 
-    @NotNull(message = "사용자 ID는 필수입니다")
     @JsonProperty("userId")
     private Long userId;
 
