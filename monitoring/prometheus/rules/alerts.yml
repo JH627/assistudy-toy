@@ -1,0 +1,69 @@
+groups:
+  - name: assistudy-service-alerts
+    rules:
+
+      # 서비스가 1분 이상 응답하지 않을 때
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "서비스 다운: {{ $labels.job }}"
+          description: "{{ $labels.job }} 서비스가 1분 이상 응답하지 않습니다."
+
+      # HTTP 5xx 에러율이 5%를 초과할 때 (5분 지속)
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum by (job) (rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+            /
+            sum by (job) (rate(http_server_requests_seconds_count[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "높은 에러율: {{ $labels.job }}"
+          description: "{{ $labels.job }}의 5xx 에러율이 5%를 초과합니다. 현재: {{ $value | humanizePercentage }}"
+
+      # p95 응답시간이 2초를 초과할 때 (5분 지속)
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (job, le) (rate(http_server_requests_seconds_bucket[5m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "높은 응답시간: {{ $labels.job }}"
+          description: "{{ $labels.job }}의 p95 응답시간이 2초를 초과합니다. 현재: {{ $value | humanizeDuration }}"
+
+      # JVM Heap 사용률이 85%를 초과할 때 (10분 지속)
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            jvm_memory_used_bytes{area="heap"}
+            /
+            jvm_memory_max_bytes{area="heap"}
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "높은 메모리 사용: {{ $labels.job }}"
+          description: "{{ $labels.job }}의 JVM Heap 사용률이 85%를 초과합니다. 현재: {{ $value | humanizePercentage }}"
+
+  - name: assistudy-kafka-alerts
+    rules:
+
+      # Kafka 컨슈머 lag이 1000을 초과할 때 (5분 지속)
+      - alert: KafkaConsumerLag
+        expr: kafka_consumer_fetch_manager_records_lag > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka 컨슈머 지연: {{ $labels.job }}"
+          description: "{{ $labels.job }}의 Kafka 컨슈머 lag이 1000을 초과합니다. 현재: {{ $value }}"
