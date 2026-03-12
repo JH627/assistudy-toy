@@ -1,8 +1,10 @@
 package com.assistudy.apigatewayservice.config;
 
 import com.assistudy.apigatewayservice.filter.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
+import org.springframework.cloud.gateway.filter.ratelimit.RateLimiter;
 import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
@@ -17,17 +19,18 @@ import reactor.core.publisher.Mono;
 public class GatewayConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
-	private final RedisRateLimiter loginRateLimiter;
-	private final RedisRateLimiter refreshRateLimiter;
+	private final RateLimiter<?> loginRateLimiter;
+	private final RateLimiter<?> refreshRateLimiter;
 	private final KeyResolver ipKeyResolver;
 
 	public GatewayConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-			RedisRateLimiter loginRateLimiter,
-			RedisRateLimiter refreshRateLimiter,
+			@Qualifier("loginRateLimiter") RedisRateLimiter loginRateLimiter,
+			@Qualifier("refreshRateLimiter") RedisRateLimiter refreshRateLimiter,
+			@Qualifier("bypassRateLimiter") RedisRateLimiter bypassRateLimiter,
 			KeyResolver ipKeyResolver) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-		this.loginRateLimiter = loginRateLimiter;
-		this.refreshRateLimiter = refreshRateLimiter;
+		this.loginRateLimiter = new BypassAwareRateLimiter(loginRateLimiter, bypassRateLimiter);
+		this.refreshRateLimiter = new BypassAwareRateLimiter(refreshRateLimiter, bypassRateLimiter);
 		this.ipKeyResolver = ipKeyResolver;
 	}
 
