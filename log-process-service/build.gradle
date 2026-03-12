@@ -22,6 +22,10 @@ dependencies {
 
     // Metrics
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springframework.boot:spring-boot-zipkin'
+    implementation 'org.springframework.boot:spring-boot-micrometer-tracing-brave'
+    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 
     // Jackson
     implementation 'com.fasterxml.jackson.core:jackson-databind'
