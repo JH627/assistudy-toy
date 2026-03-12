@@ -11,6 +11,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
 	implementation 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springframework.boot:spring-boot-zipkin'
+	implementation 'org.springframework.boot:spring-boot-micrometer-tracing-brave'
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 
 	// SpringDoc OpenAPI for WebFlux
 	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.2'

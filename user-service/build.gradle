@@ -13,6 +13,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	// Prometheus metrics
 	implementation 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springframework.boot:spring-boot-zipkin'
+	implementation 'org.springframework.boot:spring-boot-micrometer-tracing-brave'
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 	// Spring Web (provided via shared, but declared explicitly for clarity)
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	// Spring Data JPA
