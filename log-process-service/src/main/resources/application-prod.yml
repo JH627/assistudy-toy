@@ -26,9 +26,9 @@ eureka:
     register-with-eureka: true
   instance:
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${random.value}
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
+    instance-id: ${spring.application.name}:${random.uuid}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 logging:
   level:

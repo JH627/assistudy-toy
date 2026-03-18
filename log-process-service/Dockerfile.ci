@@ -1,0 +1,11 @@
+# CI 전용 Dockerfile — GitHub Actions에서 미리 빌드된 JAR을 복사합니다.
+# 로컬 빌드 시에는 Dockerfile을 사용하세요.
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+ARG JAR_FILE
+COPY ${JAR_FILE} app.jar
+
+EXPOSE 8084
+
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]

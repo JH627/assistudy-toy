@@ -12,11 +12,10 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
   instance:
-    prefer-ip-address: false
-    hostname: apigateway-service
-    instance-id: apigateway-service:8080
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 logging:
   level:

@@ -1,0 +1,32 @@
+# 민감 정보
+.env
+monitoring/alertmanager/alertmanager.yml
+
+# Claude Code
+.claude/
+
+# IDE
+/.idea
+.idea/
+*.iml
+
+# Gradle
+.gradle/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Spring Boot
+HELP.md
+/native-config-repo
+
+# k6 결과 리포트
+k6/results/
