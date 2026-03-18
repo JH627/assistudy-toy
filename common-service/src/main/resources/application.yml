@@ -1,8 +1,13 @@
+server:
+  shutdown: graceful
+
 spring:
   application:
     name: common-service
   jpa:
     open-in-view: false
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 management:
   endpoints:

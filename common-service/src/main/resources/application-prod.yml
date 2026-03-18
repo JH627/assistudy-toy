@@ -15,9 +15,6 @@ spring:
       hibernate:
         format_sql: false
 
-user-service:
-  url: ${USER_SERVICE_URL}
-
 livekit:
   url: ${LIVEKIT_URL}
   api:
@@ -36,11 +33,10 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
   instance:
-    prefer-ip-address: false
-    hostname: common-service
-    instance-id: common-service:8081
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 logging:
   level:

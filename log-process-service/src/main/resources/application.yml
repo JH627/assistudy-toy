@@ -1,8 +1,13 @@
+server:
+  shutdown: graceful
+
 spring:
   application:
     name: log-process-service
   jackson:
     time-zone: Asia/Seoul
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 management:
   endpoints:
