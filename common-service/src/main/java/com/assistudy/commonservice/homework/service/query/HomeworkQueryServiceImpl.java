@@ -68,15 +68,24 @@ public class HomeworkQueryServiceImpl implements HomeworkQueryService {
 		Map<Long, List<Homework>> homeworksByRoomId = homeworkRepository.findByRoomIdInOrderByDateDesc(roomIds).stream()
 				.collect(Collectors.groupingBy(homework -> homework.getRoom().getId()));
 
-		List<Long> homeworkIds = homeworksByRoomId.values().stream()
-				.flatMap(List::stream)
+		// 피드백은 "호스트가 아닌 방"의 과제에서만 실제로 쓰이니(아래 !isHost 분기),
+		// 그 범위로만 미리 좁혀서 조회 - 안 그러면 참여방 전부가 내가 호스트인 경우에도
+		// 매번 헛되이 피드백을 긁어오게 됨 (배치화 전엔 !isHost 분기 안에서만 조회했었음)
+		List<Long> nonHostRoomIds = allParticipations.stream()
+				.filter(participation -> !participation.getRoom().getHostUserId().equals(userId))
+				.map(participation -> participation.getRoom().getId())
+				.distinct()
+				.toList();
+
+		List<Long> homeworkIdsNeedingFeedback = nonHostRoomIds.stream()
+				.flatMap(roomId -> homeworksByRoomId.getOrDefault(roomId, List.of()).stream())
 				.map(Homework::getId)
 				.toList();
 
 		// 과제마다 반복 조회하던 피드백도 한 번에 조회해서 homework_id로 묶어둠
-		Map<Long, List<Feedback>> feedbacksByHomeworkId = homeworkIds.isEmpty()
+		Map<Long, List<Feedback>> feedbacksByHomeworkId = homeworkIdsNeedingFeedback.isEmpty()
 				? Map.of()
-				: feedbackRepository.findByHomeworkIdInOrderByDateDesc(homeworkIds).stream()
+				: feedbackRepository.findByHomeworkIdInOrderByDateDesc(homeworkIdsNeedingFeedback).stream()
 						.collect(Collectors.groupingBy(feedback -> feedback.getHomework().getId()));
 
 		List<UserParticipatedRoomsWithHomeworkResponse.RoomWithHomeworkInfo> roomInfos = allParticipations.stream()
