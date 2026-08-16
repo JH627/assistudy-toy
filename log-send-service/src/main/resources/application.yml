@@ -1,14 +1,12 @@
 spring:
   application:
     name: log-send-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 server:
   port: 8085
   shutdown: graceful
-
-spring:
-  lifecycle:
-    timeout-per-shutdown-phase: 30s
 
 management:
   endpoints:

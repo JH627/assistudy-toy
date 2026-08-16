@@ -1,14 +1,12 @@
 spring:
   application:
     name: discovery-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 server:
   port: 8761
   shutdown: graceful
-
-spring:
-  lifecycle:
-    timeout-per-shutdown-phase: 30s
 
 eureka:
   client:
