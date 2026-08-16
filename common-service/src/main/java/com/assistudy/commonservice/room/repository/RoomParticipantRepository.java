@@ -19,6 +19,10 @@ public interface RoomParticipantRepository extends JpaRepository<RoomParticipant
     // 특정 방의 참여자 수 조회
     int countByRoomIdAndIsDeletedFalse(Long roomId);
 
+    // 여러 방의 참여자 수를 한 번에 조회 (room_id -> count). 참여자가 없는 방은 결과에 아예 안 나오니 호출부에서 0으로 기본값 처리할 것
+    @Query("SELECT rp.room.id, COUNT(rp) FROM RoomParticipant rp WHERE rp.room.id IN :roomIds AND rp.isDeleted = false GROUP BY rp.room.id")
+    List<Object[]> countGroupedByRoomIdIn(@Param("roomIds") List<Long> roomIds);
+
     // 특정 사용자가 특정 방에 참여 중인지 확인
     Optional<RoomParticipant> findByRoomIdAndUserIdAndIsDeletedFalse(Long roomId, Long userId);
 

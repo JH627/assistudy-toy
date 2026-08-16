@@ -37,20 +37,34 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 		// 삭제되지 않은 방 조회
 		List<Room> rooms = roomRepository.findByIsDeletedFalse();
 
+		if (rooms.isEmpty()) {
+			return List.of();
+		}
+
+		List<Long> roomIds = rooms.stream().map(Room::getId).toList();
+		List<Long> hostUserIds = rooms.stream().map(Room::getHostUserId).distinct().toList();
+
+		// 참가자 수를 방 N개당 N번이 아니라 한 번에 조회
+		Map<Long, Integer> participantCountMap = roomParticipantRepository.countGroupedByRoomIdIn(roomIds).stream()
+				.collect(Collectors.toMap(
+						row -> (Long) row[0],
+						row -> ((Number) row[1]).intValue()
+				));
+
+		// 호스트 닉네임도 개별 호출 대신 벌크 조회
+		List<UserInfoResponse> hostInfos;
+		try {
+			hostInfos = userServiceClient.getUsersInfo(hostUserIds).getResult();
+		} catch (Exception e) {
+			hostInfos = List.of();
+		}
+		Map<Long, String> hostNicknames = (hostInfos == null ? List.<UserInfoResponse>of() : hostInfos).stream()
+				.collect(Collectors.toMap(UserInfoResponse::getId, UserInfoResponse::getNickname));
+
 		return rooms.stream()
 				.map(room -> {
-					// 현재 방 참여자 수
-					int currentParticipants = roomParticipantRepository.countByRoomIdAndIsDeletedFalse(room.getId());
-					// 호스트 닉네임
-					String hostNickname = "Unknown";
-					try {
-						UserInfoResponse hostInfo = userServiceClient.getUserInfo(room.getHostUserId()).getResult();
-						hostNickname = hostInfo != null ? hostInfo.getNickname() : "Unknown";
-					} catch (Exception e) {
-						// User service 호출 실패시 기본값 사용
-						hostNickname = "Host#" + room.getHostUserId();
-					}
-
+					int currentParticipants = participantCountMap.getOrDefault(room.getId(), 0);
+					String hostNickname = hostNicknames.getOrDefault(room.getHostUserId(), "Host#" + room.getHostUserId());
 					return RoomConverter.toRoomListResponse(room, currentParticipants, hostNickname, false);
 				})
 				.toList();
