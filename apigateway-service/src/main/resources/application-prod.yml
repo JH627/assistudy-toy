@@ -4,6 +4,10 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD:}
+  cloud:
+    inetutils:
+      preferred-networks:
+        - 10.20
 
 jwt:
   public-key: ${JWT_PUBLIC_KEY}

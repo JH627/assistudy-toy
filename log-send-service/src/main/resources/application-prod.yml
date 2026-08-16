@@ -1,6 +1,10 @@
 spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+  cloud:
+    inetutils:
+      preferred-networks:
+        - 10.20
 
 eureka:
   client:

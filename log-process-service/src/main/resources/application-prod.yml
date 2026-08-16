@@ -17,6 +17,10 @@ spring:
       hibernate:
         format_sql: false
     open-in-view: false
+  cloud:
+    inetutils:
+      preferred-networks:
+        - 10.20
 
 eureka:
   client:
