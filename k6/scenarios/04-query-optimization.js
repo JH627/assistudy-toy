@@ -23,6 +23,13 @@
  *
  * Before/After는 RUN_LABEL만 바꿔서 동일 조건으로 재실행 -> results/ 아래
  * 04-query-optimization-before.json / -after.json 을 비교
+ *
+ * 총 iteration 횟수를 고정하고 싶을 때 (예: rooms-list 병목 때문에 15회밖에 못 돈
+ * before와 동일한 총량으로 재측정):
+ *   -e ITERATIONS=15 -e RUN_SUFFIX=_VU15
+ * -> shared-iterations executor로 VU 15개가 총 15회만 나눠서 실행하고,
+ *    파일명도 04-query-optimization-{RUN_LABEL}_VU15.json 으로 따로 저장돼서
+ *    기존 -before.json/-after.json은 안 건드림
  */
 
 import http from 'k6/http';
@@ -35,12 +42,26 @@ import {
 } from '../utils/helpers.js';
 
 const RUN_LABEL = __ENV.RUN_LABEL || 'run';
+const RUN_SUFFIX = __ENV.RUN_SUFFIX || '';
+const FIXED_ITERATIONS = __ENV.ITERATIONS ? Number(__ENV.ITERATIONS) : null;
 
-export const options = {
-  vus: Number(__ENV.VUS) || 15,
-  duration: __ENV.DURATION || '60s',
-  summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
-};
+export const options = FIXED_ITERATIONS
+  ? {
+      scenarios: {
+        fixed: {
+          executor: 'shared-iterations',
+          vus: Number(__ENV.VUS) || 15,
+          iterations: FIXED_ITERATIONS,
+          maxDuration: __ENV.DURATION || '5m',
+        },
+      },
+      summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
+    }
+  : {
+      vus: Number(__ENV.VUS) || 15,
+      duration: __ENV.DURATION || '60s',
+      summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
+    };
 
 // 엔드포인트별 개별 Trend - 요약 JSON에 각각 별도 지표로 나와서 before/after 비교가 쉬움
 const trendRoomsList = new Trend('rooms_list_duration');
@@ -105,8 +126,8 @@ export default function (data) {
 
 export function handleSummary(data) {
   return {
-    [`/results/04-query-optimization-${RUN_LABEL}.json`]: JSON.stringify(data, null, 2),
-    [`/results/04-query-optimization-${RUN_LABEL}.html`]: htmlReport(data),
+    [`/results/04-query-optimization-${RUN_LABEL}${RUN_SUFFIX}.json`]: JSON.stringify(data, null, 2),
+    [`/results/04-query-optimization-${RUN_LABEL}${RUN_SUFFIX}.html`]: htmlReport(data),
     stdout: textSummary(data, { indent: ' ', enableColors: true }),
   };
 }

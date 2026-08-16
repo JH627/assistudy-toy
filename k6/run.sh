@@ -6,6 +6,8 @@
 #   bash k6/run.sh 3 k6test@test.com Test@1234
 #   bash k6/run.sh 4 k6test@test.com Test@1234 before https://api.example.com
 #   bash k6/run.sh 4 k6test@test.com Test@1234 after  https://api.example.com
+#   # total iteration 수를 고정하고 싶을 때 (예: before와 동일하게 15회만) - 6,7번째 인자
+#   bash k6/run.sh 4 k6test@test.com Test@1234 after https://api.example.com 15 _VU15
 
 set -e
 
@@ -14,6 +16,8 @@ TEST_EMAIL=${2:-""}
 TEST_PASSWORD=${3:-""}
 RUN_LABEL=${4:-"run"}
 TARGET_BASE_URL=${5:-""}
+ITERATIONS=${6:-""}
+RUN_SUFFIX=${7:-""}
 
 BASE_URL="http://host.docker.internal:8080"
 INFLUXDB_URL="http://host.docker.internal:8087/k6"
@@ -72,7 +76,7 @@ case $SCENARIO in
       exit 1
     fi
     RUN_BASE_URL="${TARGET_BASE_URL:-$BASE_URL}"
-    echo "=== Scenario 04: Query Optimization (RUN_LABEL=${RUN_LABEL}, target=${RUN_BASE_URL}) ==="
+    echo "=== Scenario 04: Query Optimization (RUN_LABEL=${RUN_LABEL}${RUN_SUFFIX}, target=${RUN_BASE_URL}, iterations=${ITERATIONS:-duration-based}) ==="
     MSYS_NO_PATHCONV=1 docker run --rm \
       -v "${SCRIPT_DIR}:/scripts" \
       -v "${RESULTS_DIR}:/results" \
@@ -82,6 +86,8 @@ case $SCENARIO in
       -e "TEST_EMAIL=${TEST_EMAIL}" \
       -e "TEST_PASSWORD=${TEST_PASSWORD}" \
       -e "RUN_LABEL=${RUN_LABEL}" \
+      -e "ITERATIONS=${ITERATIONS}" \
+      -e "RUN_SUFFIX=${RUN_SUFFIX}" \
       /scripts/scenarios/04-query-optimization.js
     ;;
   *)
