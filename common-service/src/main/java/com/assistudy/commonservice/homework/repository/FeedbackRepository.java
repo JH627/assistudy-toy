@@ -14,6 +14,9 @@ import java.util.Optional;
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     List<Feedback> findByHomeworkIdOrderByDateDesc(Long homeworkId);
 
+    // 여러 숙제의 피드백을 한 번에 조회 (숙제마다 반복 호출하는 N+1 방지용)
+    List<Feedback> findByHomeworkIdInOrderByDateDesc(List<Long> homeworkIds);
+
     // 특정 방, 특정 날짜, 특정 사용자의 피드백 조회
     @Query("SELECT f FROM Feedback f JOIN FETCH f.homework h WHERE h.room.id = :roomId AND f.userId = :userId AND DATE(f.date) = :date")
     List<Feedback> findByRoomIdAndDateAndUserId(@Param("roomId") Long roomId,

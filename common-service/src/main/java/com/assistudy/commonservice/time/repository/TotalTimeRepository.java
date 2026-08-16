@@ -2,6 +2,7 @@ package com.assistudy.commonservice.time.repository;
 
 import com.assistudy.commonservice.room.entity.enums.RoomType;
 import com.assistudy.commonservice.time.entity.TotalTime;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,26 +32,33 @@ public interface TotalTimeRepository extends JpaRepository<TotalTime, Long> {
     List<Object[]> findTagTimeSummaryByUserIdAndDateAndRoomType(@Param("userId") Long userId, @Param("date") LocalDate date, @Param("roomType") RoomType roomType);
 
     // 특정 사용자의 특정 연도 focusTime 일별 집계 조회 (STUDY 타입만)
+    // date가 이미 DATE 컬럼이라 YEAR(t.date) 대신 [yearStart, yearEndExclusive) 범위 비교로
+    // sargable하게 재작성 (idx_total_time_user_date 사용)
     @Query("SELECT t.date, SUM(t.focusTime) " +
            "FROM TotalTime t JOIN t.room r " +
-           "WHERE t.userId = :userId AND YEAR(t.date) = :year AND r.type = 'STUDY' " +
+           "WHERE t.userId = :userId AND t.date >= :yearStart AND t.date < :yearEndExclusive AND r.type = 'STUDY' " +
            "GROUP BY t.date " +
            "ORDER BY t.date")
-    List<Object[]> findDailyFocusTimeByUserIdAndYear(@Param("userId") Long userId, @Param("year") Integer year);
+    List<Object[]> findDailyFocusTimeByUserIdAndYear(@Param("userId") Long userId,
+                                                       @Param("yearStart") LocalDate yearStart,
+                                                       @Param("yearEndExclusive") LocalDate yearEndExclusive);
 
     // 특정 사용자의 특정 연도 최대 focusTime 조회 (STUDY 타입만)
     @Query("SELECT SUM(t.focusTime) " +
            "FROM TotalTime t JOIN t.room r " +
-           "WHERE t.userId = :userId AND YEAR(t.date) = :year AND r.type = 'STUDY' " +
+           "WHERE t.userId = :userId AND t.date >= :yearStart AND t.date < :yearEndExclusive AND r.type = 'STUDY' " +
            "GROUP BY t.date " +
            "ORDER BY SUM(t.focusTime) DESC " +
            "LIMIT 1")
-    Integer findMaxDailyFocusTimeByUserIdAndYear(@Param("userId") Long userId, @Param("year") Integer year);
+    Integer findMaxDailyFocusTimeByUserIdAndYear(@Param("userId") Long userId,
+                                                   @Param("yearStart") LocalDate yearStart,
+                                                   @Param("yearEndExclusive") LocalDate yearEndExclusive);
 
     // 오늘 기준 focusTime 상위 6명 조회 (STUDY 타입만)
+    // date가 이미 DATE 컬럼이라 DATE(t.date) 래핑은 불필요한 함수 호출이었음 -> 순수 비교로 변경 (idx_total_time_date 사용)
     @Query("SELECT t.userId, SUM(t.focusTime) " +
            "FROM TotalTime t JOIN t.room r " +
-           "WHERE DATE(t.date) = :date AND r.type = 'STUDY' " +
+           "WHERE t.date = :date AND r.type = 'STUDY' " +
            "GROUP BY t.userId " +
            "ORDER BY SUM(t.focusTime) DESC " +
            "LIMIT 6")
@@ -64,11 +72,14 @@ public interface TotalTimeRepository extends JpaRepository<TotalTime, Long> {
     @Query("SELECT DISTINCT r.id, r.name FROM TotalTime t JOIN t.room r WHERE t.userId = :userId AND DATE(t.date) = :date")
     List<Object[]> findDistinctRoomsByUserIdAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
 
-    // 방 추천을 위한 totalTime 대비 focusTime 비율이 높은 방 조회
+    // 방 추천을 위한 totalTime 대비 focusTime 비율이 높은 방 조회.
+    // 예전엔 전체 이력을 다 집계하고 SQL LIMIT도 없어서 total_time이 쌓일수록 매 호출마다
+    // 느려졌음 -> 최근 sinceDate 이후 기록만 집계(idx_total_time_date 활용) + Pageable로
+    // 후보 개수 자체를 DB 레벨에서 제한
     @Query("SELECT r FROM TotalTime t JOIN t.room r " +
-           "WHERE r.isDeleted = false " +
+           "WHERE r.isDeleted = false AND t.date >= :sinceDate " +
            "GROUP BY r " +
            "HAVING SUM(t.totalTime) > 0 " +
            "ORDER BY CAST(SUM(t.focusTime) AS DOUBLE) / CAST(SUM(t.totalTime) AS DOUBLE) DESC")
-    List<Room> findTopRoomsByFocusRatio();
+    List<Room> findTopRoomsByFocusRatio(@Param("sinceDate") LocalDate sinceDate, Pageable pageable);
 }
