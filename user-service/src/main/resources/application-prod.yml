@@ -58,6 +58,10 @@ oauth:
   failure:
     redirect-uri: ${OAUTH_FAILURE_REDIRECT_URI}
 
+openapi:
+  service:
+    gateway-url: ${OPENAPI_GATEWAY_URL:http://localhost:8080}
+
 jwt:
   private-key: ${JWT_PRIVATE_KEY}
   public-key: ${JWT_PUBLIC_KEY}

@@ -26,6 +26,10 @@ gms:
     base-url: ${GMS_API_BASE_URL}
     key: ${GMS_API_KEY}
 
+openapi:
+  service:
+    gateway-url: ${OPENAPI_GATEWAY_URL:http://localhost:8080}
+
 eureka:
   client:
     service-url:
