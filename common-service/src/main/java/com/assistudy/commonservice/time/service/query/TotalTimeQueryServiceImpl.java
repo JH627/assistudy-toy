@@ -75,11 +75,15 @@ public class TotalTimeQueryServiceImpl implements TotalTimeQueryService {
             throw new TimeException(TimeErrorCode.USER_NOT_FOUND);
         }
 
+        // YEAR(t.date) 대신 [yearStart, yearEndExclusive) 범위로 조회 (인덱스 사용 위함)
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEndExclusive = LocalDate.of(year + 1, 1, 1);
+
         // 해당 연도의 일별 focusTime 데이터 조회
-        List<Object[]> dailyFocusTimeResults = totalTimeRepository.findDailyFocusTimeByUserIdAndYear(userId, year);
+        List<Object[]> dailyFocusTimeResults = totalTimeRepository.findDailyFocusTimeByUserIdAndYear(userId, yearStart, yearEndExclusive);
 
         // 해당 연도의 최대 focusTime 조회
-        Integer maxFocusTime = totalTimeRepository.findMaxDailyFocusTimeByUserIdAndYear(userId, year);
+        Integer maxFocusTime = totalTimeRepository.findMaxDailyFocusTimeByUserIdAndYear(userId, yearStart, yearEndExclusive);
 
         // 1년간의 모든 날짜에 대해 공부 데이터 생성
         List<StudyGrassResponse.DailyStudyData> dailyData = generateYearlyData(year, dailyFocusTimeResults, maxFocusTime);

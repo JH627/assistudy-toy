@@ -31,26 +31,33 @@ public interface TotalTimeRepository extends JpaRepository<TotalTime, Long> {
     List<Object[]> findTagTimeSummaryByUserIdAndDateAndRoomType(@Param("userId") Long userId, @Param("date") LocalDate date, @Param("roomType") RoomType roomType);
 
     // 특정 사용자의 특정 연도 focusTime 일별 집계 조회 (STUDY 타입만)
+    // date가 이미 DATE 컬럼이라 YEAR(t.date) 대신 [yearStart, yearEndExclusive) 범위 비교로
+    // sargable하게 재작성 (idx_total_time_user_date 사용)
     @Query("SELECT t.date, SUM(t.focusTime) " +
            "FROM TotalTime t JOIN t.room r " +
-           "WHERE t.userId = :userId AND YEAR(t.date) = :year AND r.type = 'STUDY' " +
+           "WHERE t.userId = :userId AND t.date >= :yearStart AND t.date < :yearEndExclusive AND r.type = 'STUDY' " +
            "GROUP BY t.date " +
            "ORDER BY t.date")
-    List<Object[]> findDailyFocusTimeByUserIdAndYear(@Param("userId") Long userId, @Param("year") Integer year);
+    List<Object[]> findDailyFocusTimeByUserIdAndYear(@Param("userId") Long userId,
+                                                       @Param("yearStart") LocalDate yearStart,
+                                                       @Param("yearEndExclusive") LocalDate yearEndExclusive);
 
     // 특정 사용자의 특정 연도 최대 focusTime 조회 (STUDY 타입만)
     @Query("SELECT SUM(t.focusTime) " +
            "FROM TotalTime t JOIN t.room r " +
-           "WHERE t.userId = :userId AND YEAR(t.date) = :year AND r.type = 'STUDY' " +
+           "WHERE t.userId = :userId AND t.date >= :yearStart AND t.date < :yearEndExclusive AND r.type = 'STUDY' " +
            "GROUP BY t.date " +
            "ORDER BY SUM(t.focusTime) DESC " +
            "LIMIT 1")
-    Integer findMaxDailyFocusTimeByUserIdAndYear(@Param("userId") Long userId, @Param("year") Integer year);
+    Integer findMaxDailyFocusTimeByUserIdAndYear(@Param("userId") Long userId,
+                                                   @Param("yearStart") LocalDate yearStart,
+                                                   @Param("yearEndExclusive") LocalDate yearEndExclusive);
 
     // 오늘 기준 focusTime 상위 6명 조회 (STUDY 타입만)
+    // date가 이미 DATE 컬럼이라 DATE(t.date) 래핑은 불필요한 함수 호출이었음 -> 순수 비교로 변경 (idx_total_time_date 사용)
     @Query("SELECT t.userId, SUM(t.focusTime) " +
            "FROM TotalTime t JOIN t.room r " +
-           "WHERE DATE(t.date) = :date AND r.type = 'STUDY' " +
+           "WHERE t.date = :date AND r.type = 'STUDY' " +
            "GROUP BY t.userId " +
            "ORDER BY SUM(t.focusTime) DESC " +
            "LIMIT 6")
