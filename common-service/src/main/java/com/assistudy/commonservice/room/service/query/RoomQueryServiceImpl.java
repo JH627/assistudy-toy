@@ -18,8 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -162,25 +164,36 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 	@Override
 	public SearchRoomsResponse searchRooms(String keyword, Long userId) {
 		String trimmedKeyword = keyword == null ? "" : keyword.trim();
-		List<Room> rooms = roomRepository.searchRoomsByKeyword(trimmedKeyword);
+		// BOOLEAN MODE에서 phrase(큰따옴표)로 감싸 보낼 거라, 키워드 안에 큰따옴표가 있으면
+		// phrase가 조기 종료돼 구문 오류가 날 수 있어 제거
+		String safeKeyword = trimmedKeyword.replace("\"", "");
+		List<Room> rooms = roomRepository.searchRoomsByKeyword(safeKeyword);
 
 		if (rooms.isEmpty()) {
 			return RoomConverter.toSearchRoomsResponse(List.of(), trimmedKeyword);
 		}
 
+		List<Long> roomIds = rooms.stream().map(Room::getId).toList();
 		List<Long> hostUserIds = rooms.stream().map(Room::getHostUserId).distinct().toList();
 		List<UserInfoResponse> hostInfos = userServiceClient.getUsersInfo(hostUserIds).getResult();
 		Map<Long, UserInfoResponse> hostInfoMap = hostInfos.stream()
 				.collect(Collectors.toMap(UserInfoResponse::getId, info -> info));
 
+		// 참가자 수 / 내가 참가 중인지 여부를 방마다 개별 조회하는 대신 한 번씩만 조회
+		Map<Long, Integer> participantCountMap = roomParticipantRepository.countGroupedByRoomIdIn(roomIds).stream()
+				.collect(Collectors.toMap(
+						row -> (Long) row[0],
+						row -> ((Number) row[1]).intValue()
+				));
+		Set<Long> joinedRoomIds = new HashSet<>(roomParticipantRepository.findJoinedRoomIdsIn(roomIds, userId));
+
 		List<SearchRoomsResponse.RoomSearchResult> results = rooms.stream()
 				.map(room -> {
-					int currentParticipants = roomParticipantRepository.countByRoomIdAndIsDeletedFalse(room.getId());
+					int currentParticipants = participantCountMap.getOrDefault(room.getId(), 0);
 					UserInfoResponse hostInfo = hostInfoMap.get(room.getHostUserId());
 					String hostNickname = hostInfo != null ? hostInfo.getNickname() : "Unknown";
 
-					// 사용자가 방에 참가 중인지 확인
-					boolean isJoined = roomParticipantRepository.findByRoomIdAndUserIdAndIsDeletedFalse(room.getId(), userId).isPresent();
+					boolean isJoined = joinedRoomIds.contains(room.getId());
 
 					return RoomConverter.toRoomSearchResult(room, currentParticipants, hostNickname, isJoined);
 				})

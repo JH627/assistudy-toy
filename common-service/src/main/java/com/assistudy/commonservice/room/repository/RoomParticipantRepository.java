@@ -26,6 +26,10 @@ public interface RoomParticipantRepository extends JpaRepository<RoomParticipant
     // 특정 사용자가 특정 방에 참여 중인지 확인
     Optional<RoomParticipant> findByRoomIdAndUserIdAndIsDeletedFalse(Long roomId, Long userId);
 
+    // 여러 방 중 특정 사용자가 참여 중인 방 id만 한 번에 조회 (isJoined 배치 판별용)
+    @Query("SELECT rp.room.id FROM RoomParticipant rp WHERE rp.room.id IN :roomIds AND rp.userId = :userId AND rp.isDeleted = false")
+    List<Long> findJoinedRoomIdsIn(@Param("roomIds") List<Long> roomIds, @Param("userId") Long userId);
+
     // 특정 방의 참여자들의 User ID 조회
     @Query("SELECT rp.userId FROM RoomParticipant rp WHERE rp.room.id = :roomId AND rp.isDeleted = false")
     List<Long> findUserIdsByRoomIdAndIsDeletedFalse(@Param("roomId") Long roomId);
