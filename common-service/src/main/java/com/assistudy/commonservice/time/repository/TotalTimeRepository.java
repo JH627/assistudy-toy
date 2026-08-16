@@ -2,6 +2,7 @@ package com.assistudy.commonservice.time.repository;
 
 import com.assistudy.commonservice.room.entity.enums.RoomType;
 import com.assistudy.commonservice.time.entity.TotalTime;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -71,11 +72,14 @@ public interface TotalTimeRepository extends JpaRepository<TotalTime, Long> {
     @Query("SELECT DISTINCT r.id, r.name FROM TotalTime t JOIN t.room r WHERE t.userId = :userId AND DATE(t.date) = :date")
     List<Object[]> findDistinctRoomsByUserIdAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
 
-    // 방 추천을 위한 totalTime 대비 focusTime 비율이 높은 방 조회
+    // 방 추천을 위한 totalTime 대비 focusTime 비율이 높은 방 조회.
+    // 예전엔 전체 이력을 다 집계하고 SQL LIMIT도 없어서 total_time이 쌓일수록 매 호출마다
+    // 느려졌음 -> 최근 sinceDate 이후 기록만 집계(idx_total_time_date 활용) + Pageable로
+    // 후보 개수 자체를 DB 레벨에서 제한
     @Query("SELECT r FROM TotalTime t JOIN t.room r " +
-           "WHERE r.isDeleted = false " +
+           "WHERE r.isDeleted = false AND t.date >= :sinceDate " +
            "GROUP BY r " +
            "HAVING SUM(t.totalTime) > 0 " +
            "ORDER BY CAST(SUM(t.focusTime) AS DOUBLE) / CAST(SUM(t.totalTime) AS DOUBLE) DESC")
-    List<Room> findTopRoomsByFocusRatio();
+    List<Room> findTopRoomsByFocusRatio(@Param("sinceDate") LocalDate sinceDate, Pageable pageable);
 }

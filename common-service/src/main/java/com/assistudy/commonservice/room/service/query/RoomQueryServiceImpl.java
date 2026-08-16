@@ -13,9 +13,11 @@ import com.assistudy.commonservice.room.repository.RoomParticipantRepository;
 import com.assistudy.commonservice.room.repository.RoomRepository;
 import com.assistudy.commonservice.time.repository.TotalTimeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,6 +35,11 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 	private final RoomParticipantRepository roomParticipantRepository;
 	private final UserServiceClient userServiceClient;
 	private final TotalTimeRepository totalTimeRepository;
+
+	private static final int RECOMMEND_LOOKBACK_DAYS = 30;
+	private static final int RECOMMEND_CANDIDATE_LIMIT = 50;
+	private static final int RECOMMEND_MAX_AVAILABLE = 10;
+	private static final int RECOMMEND_RESULT_COUNT = 4;
 
 	@Override
 	public List<RoomListResponse> getAllRooms() {
@@ -204,28 +211,45 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 
 	@Override
 	public SearchRoomsResponse getRecommendedRooms(Long userId) {
-		// totalTime 대비 focusTime 비율이 높은 방 조회
-		List<Room> topRooms = totalTimeRepository.findTopRoomsByFocusRatio();
+		// 최근 30일 totalTime 대비 focusTime 비율이 높은 방 후보를 최대 50개까지만 조회
+		// (기존엔 전체 이력 전체 방을 다 집계해서 total_time이 쌓일수록 느려졌음)
+		List<Room> topRooms = totalTimeRepository.findTopRoomsByFocusRatio(
+				LocalDate.now().minusDays(RECOMMEND_LOOKBACK_DAYS),
+				PageRequest.of(0, RECOMMEND_CANDIDATE_LIMIT));
 
 		if (topRooms.isEmpty()) {
 			return RoomConverter.toSearchRoomsResponse(List.of(), "추천");
 		}
-		// 조건에 맞는 방들을 찾기 (최대 10개)
-		List<SearchRoomsResponse.RoomSearchResult> availableRooms = new ArrayList<>();
 
-		// 모든 방을 DTO로 변환하면서 조건에 맞는 방 찾기
+		List<Long> roomIds = topRooms.stream().map(Room::getId).toList();
+		List<Long> hostUserIds = topRooms.stream().map(Room::getHostUserId).distinct().toList();
+
+		// 후보 방들의 참가자 수 / 내 참가 여부 / 호스트 정보를 방마다 개별 조회하는 대신 한 번씩만 조회
+		Map<Long, Integer> participantCountMap = roomParticipantRepository.countGroupedByRoomIdIn(roomIds).stream()
+				.collect(Collectors.toMap(
+						row -> (Long) row[0],
+						row -> ((Number) row[1]).intValue()
+				));
+		Set<Long> joinedRoomIds = new HashSet<>(roomParticipantRepository.findJoinedRoomIdsIn(roomIds, userId));
+		List<UserInfoResponse> hostInfos;
+		try {
+			hostInfos = userServiceClient.getUsersInfo(hostUserIds).getResult();
+		} catch (Exception e) {
+			hostInfos = List.of();
+		}
+		Map<Long, String> hostNicknames = (hostInfos == null ? List.<UserInfoResponse>of() : hostInfos).stream()
+				.collect(Collectors.toMap(UserInfoResponse::getId, UserInfoResponse::getNickname));
+
+		// 조건에 맞는 방들을 찾기 (최대 10개) - 후보 목록은 이미 다 메모리에 있으니 추가 쿼리 없이 순회만
+		List<SearchRoomsResponse.RoomSearchResult> availableRooms = new ArrayList<>();
 		for (Room room : topRooms) {
-			// 최대 10개까지만 찾기
-			if (availableRooms.size() >= 10) {
+			if (availableRooms.size() >= RECOMMEND_MAX_AVAILABLE) {
 				break;
 			}
 
-			int currentParticipants = roomParticipantRepository.countByRoomIdAndIsDeletedFalse(room.getId());
-			UserInfoResponse hostInfo = getUserInfo(room.getHostUserId());
-			String hostNickname = hostInfo.getNickname();
-
-			// 사용자가 방에 참가 중인지 확인
-			boolean isJoined = roomParticipantRepository.findByRoomIdAndUserIdAndIsDeletedFalse(room.getId(), userId).isPresent();
+			int currentParticipants = participantCountMap.getOrDefault(room.getId(), 0);
+			boolean isJoined = joinedRoomIds.contains(room.getId());
+			String hostNickname = hostNicknames.getOrDefault(room.getHostUserId(), "Host#" + room.getHostUserId());
 
 			// 조건에 맞는 방만 availableRooms에 추가
 			if (isJoined || currentParticipants < room.getMaxParticipants()) {
@@ -236,9 +260,9 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 		}
 		List<SearchRoomsResponse.RoomSearchResult> results;
 
-		if (availableRooms.size() >= 4) {
+		if (availableRooms.size() >= RECOMMEND_RESULT_COUNT) {
 			// 조건에 맞는 방이 4개 이상인 경우, 랜덤으로 4개 선택
-			results = selectRandomRoomsFromResults(availableRooms, 4);
+			results = selectRandomRoomsFromResults(availableRooms, RECOMMEND_RESULT_COUNT);
 		}
 		else {
 			results = availableRooms;
