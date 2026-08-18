@@ -25,6 +25,9 @@ dependencies {
 	implementation 'io.livekit:livekit-server:0.8.2'
 	// Spring Data JPA
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	// Redis (캐싱)
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

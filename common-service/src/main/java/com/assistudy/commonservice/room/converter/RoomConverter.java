@@ -1,6 +1,7 @@
 package com.assistudy.commonservice.room.converter;
 
 import com.assistudy.commonservice.global.dto.response.UserInfoResponse;
+import com.assistudy.commonservice.room.dto.cache.RecommendCandidate;
 import com.assistudy.commonservice.room.dto.response.*;
 import com.assistudy.commonservice.room.entity.Room;
 
@@ -195,6 +196,24 @@ public class RoomConverter {
 				.currentParticipants(currentParticipants)
 				.hostNickname(hostNickname)
 				.createdAt(room.getCreatedAt())
+				.isJoined(isJoined)
+				.build();
+	}
+
+	public static SearchRoomsResponse.RoomSearchResult toRoomSearchResult(RecommendCandidate candidate, Integer currentParticipants,
+				String hostNickname, Boolean isJoined) {
+		return SearchRoomsResponse.RoomSearchResult.builder()
+				.id(candidate.id())
+				.name(candidate.name())
+				.type(candidate.type())
+				.tagName(candidate.tagName())
+				.description(candidate.description())
+				.isPrivate(candidate.isPrivate())
+				.micActive(candidate.micActive())
+				.maxParticipants(candidate.maxParticipants())
+				.currentParticipants(currentParticipants)
+				.hostNickname(hostNickname)
+				.createdAt(candidate.createdAt())
 				.isJoined(isJoined)
 				.build();
 	}

@@ -3,6 +3,7 @@ package com.assistudy.commonservice.room.service.query;
 import com.assistudy.commonservice.global.client.UserServiceClient;
 import com.assistudy.commonservice.global.dto.response.UserInfoResponse;
 import com.assistudy.commonservice.room.converter.RoomConverter;
+import com.assistudy.commonservice.room.dto.cache.RecommendCandidate;
 import com.assistudy.commonservice.room.dto.response.*;
 import com.assistudy.commonservice.room.entity.Room;
 import com.assistudy.commonservice.room.entity.RoomParticipant;
@@ -11,13 +12,10 @@ import com.assistudy.commonservice.room.exception.RoomErrorCode;
 import com.assistudy.commonservice.room.exception.RoomException;
 import com.assistudy.commonservice.room.repository.RoomParticipantRepository;
 import com.assistudy.commonservice.room.repository.RoomRepository;
-import com.assistudy.commonservice.time.repository.TotalTimeRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,10 +32,8 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 	private final RoomRepository roomRepository;
 	private final RoomParticipantRepository roomParticipantRepository;
 	private final UserServiceClient userServiceClient;
-	private final TotalTimeRepository totalTimeRepository;
+	private final RoomRecommendationCandidateService roomRecommendationCandidateService;
 
-	private static final int RECOMMEND_LOOKBACK_DAYS = 30;
-	private static final int RECOMMEND_CANDIDATE_LIMIT = 50;
 	private static final int RECOMMEND_MAX_AVAILABLE = 10;
 	private static final int RECOMMEND_RESULT_COUNT = 4;
 
@@ -211,18 +207,16 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 
 	@Override
 	public SearchRoomsResponse getRecommendedRooms(Long userId) {
-		// 최근 30일 totalTime 대비 focusTime 비율이 높은 방 후보를 최대 50개까지만 조회
-		// (기존엔 전체 이력 전체 방을 다 집계해서 total_time이 쌓일수록 느려졌음)
-		List<Room> topRooms = totalTimeRepository.findTopRoomsByFocusRatio(
-				LocalDate.now().minusDays(RECOMMEND_LOOKBACK_DAYS),
-				PageRequest.of(0, RECOMMEND_CANDIDATE_LIMIT));
+		// 집계 쿼리 결과(전 사용자 공통)는 별도 빈에서 캐싱해서 가져옴 - 아래부터는 캐시 히트 여부와
+		// 무관하게 이 사용자 기준으로 매번 새로 계산(참가자 수/isJoined는 실시간이어야 하므로)
+		List<RecommendCandidate> topRooms = roomRecommendationCandidateService.getCandidates();
 
 		if (topRooms.isEmpty()) {
 			return RoomConverter.toSearchRoomsResponse(List.of(), "추천");
 		}
 
-		List<Long> roomIds = topRooms.stream().map(Room::getId).toList();
-		List<Long> hostUserIds = topRooms.stream().map(Room::getHostUserId).distinct().toList();
+		List<Long> roomIds = topRooms.stream().map(RecommendCandidate::id).toList();
+		List<Long> hostUserIds = topRooms.stream().map(RecommendCandidate::hostUserId).distinct().toList();
 
 		// 후보 방들의 참가자 수 / 내 참가 여부 / 호스트 정보를 방마다 개별 조회하는 대신 한 번씩만 조회
 		Map<Long, Integer> participantCountMap = roomParticipantRepository.countGroupedByRoomIdIn(roomIds).stream()
@@ -242,17 +236,17 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 
 		// 조건에 맞는 방들을 찾기 (최대 10개) - 후보 목록은 이미 다 메모리에 있으니 추가 쿼리 없이 순회만
 		List<SearchRoomsResponse.RoomSearchResult> availableRooms = new ArrayList<>();
-		for (Room room : topRooms) {
+		for (RecommendCandidate room : topRooms) {
 			if (availableRooms.size() >= RECOMMEND_MAX_AVAILABLE) {
 				break;
 			}
 
-			int currentParticipants = participantCountMap.getOrDefault(room.getId(), 0);
-			boolean isJoined = joinedRoomIds.contains(room.getId());
-			String hostNickname = hostNicknames.getOrDefault(room.getHostUserId(), "Host#" + room.getHostUserId());
+			int currentParticipants = participantCountMap.getOrDefault(room.id(), 0);
+			boolean isJoined = joinedRoomIds.contains(room.id());
+			String hostNickname = hostNicknames.getOrDefault(room.hostUserId(), "Host#" + room.hostUserId());
 
 			// 조건에 맞는 방만 availableRooms에 추가
-			if (isJoined || currentParticipants < room.getMaxParticipants()) {
+			if (isJoined || currentParticipants < room.maxParticipants()) {
 				SearchRoomsResponse.RoomSearchResult roomResult = RoomConverter.toRoomSearchResult(
 						room, currentParticipants, hostNickname, isJoined);
 				availableRooms.add(roomResult);

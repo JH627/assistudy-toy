@@ -11,6 +11,7 @@ import com.assistudy.commonservice.time.exception.TimeErrorCode;
 import com.assistudy.commonservice.time.exception.TimeException;
 import com.assistudy.commonservice.time.repository.TotalTimeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,6 +93,8 @@ public class TotalTimeQueryServiceImpl implements TotalTimeQueryService {
     }
 
     @Override
+    // total_time이 1분마다 갱신되는 구조라 매 요청 정확히 최신일 필요는 없음 - TTL 5분(RedisCacheConfig)으로
+    @Cacheable(value = "ranking", key = "#date")
     public StudyRankingResponse getStudyRankingByDate(LocalDate date) {
         // 해당 날짜의 focusTime 상위 6명 조회
         List<Object[]> top6Results = totalTimeRepository.findTop6UsersByFocusTimeOnDate(date);
@@ -194,12 +197,7 @@ public class TotalTimeQueryServiceImpl implements TotalTimeQueryService {
 
             String nickname = userNicknameMap.getOrDefault(userId, "Unknown");
 
-            rankingUsers.add(StudyRankingResponse.RankingUser.builder()
-                    .userId(userId)
-                    .nickname(nickname)
-                    .focusTime(focusTime)
-                    .rank(i + 1)  // 1부터 시작하는 순위
-                    .build());
+            rankingUsers.add(new StudyRankingResponse.RankingUser(userId, nickname, focusTime, i + 1)); // rank는 1부터 시작
         }
 
         return rankingUsers;

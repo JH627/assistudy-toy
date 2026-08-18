@@ -14,6 +14,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:assistudy}
 
 user-service:
   url: ${USER_SERVICE_URL:http://localhost:8082}

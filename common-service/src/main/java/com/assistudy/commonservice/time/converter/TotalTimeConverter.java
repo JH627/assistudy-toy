@@ -82,13 +82,10 @@ public class TotalTimeConverter {
      * 랭킹 결과와 사용자 정보를 StudyRankingResponse로 변환합니다.
      */
     public static StudyRankingResponse toStudyRankingResponse(
-            List<StudyRankingResponse.RankingUser> rankingUsers, 
+            List<StudyRankingResponse.RankingUser> rankingUsers,
             LocalDate date) {
-        
-        return StudyRankingResponse.builder()
-                .date(date)
-                .rankingUsers(rankingUsers)
-                .build();
+
+        return new StudyRankingResponse(date, rankingUsers);
     }
 
     /**
