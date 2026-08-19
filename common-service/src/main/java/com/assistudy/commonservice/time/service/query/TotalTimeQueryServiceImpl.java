@@ -101,7 +101,7 @@ public class TotalTimeQueryServiceImpl implements TotalTimeQueryService {
         // 해당 날짜의 focusTime 상위 6명 조회
         long dbStart = System.nanoTime();
         List<Object[]> top6Results = totalTimeRepository.findTop6UsersByFocusTimeOnDate(date);
-        log.info("[baseline] ranking DB query: {} ms", (System.nanoTime() - dbStart) / 1_000_000);
+        log.debug("[baseline] ranking DB query: {} ms", (System.nanoTime() - dbStart) / 1_000_000);
 
         if (top6Results.isEmpty()) {
             // 데이터가 없는 경우 빈 랭킹 반환
@@ -116,7 +116,7 @@ public class TotalTimeQueryServiceImpl implements TotalTimeQueryService {
         // 사용자 정보 일괄 조회
         long restStart = System.nanoTime();
         List<UserInfoResponse> userInfos = userServiceClient.getUsersInfo(userIds).getResult();
-        log.info("[baseline] ranking getUsersInfo REST call: {} ms", (System.nanoTime() - restStart) / 1_000_000);
+        log.debug("[baseline] ranking getUsersInfo REST call: {} ms", (System.nanoTime() - restStart) / 1_000_000);
         Map<Long, String> userNicknameMap = userInfos.stream()
                 .collect(Collectors.toMap(UserInfoResponse::getId, UserInfoResponse::getNickname));
 
