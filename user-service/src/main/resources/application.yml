@@ -8,6 +8,16 @@ spring:
     open-in-view: false
   lifecycle:
     timeout-per-shutdown-phase: 30s
+  grpc:
+    server:
+      port: ${GRPC_SERVER_PORT:9090}
+
+eureka:
+  instance:
+    metadata-map:
+      # common-service의 커스텀 NameResolver가 이 메타데이터로 gRPC 포트를 찾음
+      # (Eureka의 기본 instance port는 REST 포트라 gRPC 포트는 별도로 알려줘야 함)
+      grpcPort: ${GRPC_SERVER_PORT:9090}
 
 management:
   endpoints:

@@ -4,8 +4,20 @@ plugins {
 
 description = 'User Service for Assistudy'
 
+ext {
+	set('springGrpcVersion', "1.0.3")
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
+	}
+}
+
 dependencies {
 	implementation project(':shared')
+
+	implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
 
 	// Eureka Client
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
