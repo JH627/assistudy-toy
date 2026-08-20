@@ -8,17 +8,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @FeignClient(name = "user-service")
-public interface UserServiceFeignClient extends UserServiceClient {
+public interface UserServiceFeignClient {
 
-    @Override
     @GetMapping("/users/internal/{userId}")
     ApiResponse<UserInfoResponse> getUserInfo(@PathVariable("userId") Long userId);
 
-    @Override
     @PostMapping("/users/internal/bulk")
     ApiResponse<List<UserInfoResponse>> getUsersInfo(@RequestBody List<Long> userIds);
 
-    @Override
     @PostMapping("/users/internal/check-token")
     ApiResponse<Boolean> checkUserToken(@RequestBody String token);
 }
