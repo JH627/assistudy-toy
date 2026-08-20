@@ -2,20 +2,18 @@ package com.assistudy.commonservice.global.client;
 
 import com.assistudy.shared.response.ApiResponse;
 import com.assistudy.commonservice.global.dto.response.UserInfoResponse;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@FeignClient(name = "user-service")
+/**
+ * user-service 호출 인터페이스. 실제 구현은 {@link UserServiceFeignClient}(원격 호출)를
+ * {@link UserServiceClientWrapper}(Circuit Breaker)가 감싸는 형태이며, 호출부는 항상 이 타입으로 주입받는다.
+ */
 public interface UserServiceClient {
 
-    @GetMapping("/users/internal/{userId}")
-    ApiResponse<UserInfoResponse> getUserInfo(@PathVariable("userId") Long userId);
+    ApiResponse<UserInfoResponse> getUserInfo(Long userId);
 
-    @PostMapping("/users/internal/bulk")
-    ApiResponse<List<UserInfoResponse>> getUsersInfo(@RequestBody List<Long> userIds);
+    ApiResponse<List<UserInfoResponse>> getUsersInfo(List<Long> userIds);
 
-    @PostMapping("/users/internal/check-token")
-    ApiResponse<Boolean> checkUserToken(@RequestBody String token);
-} 
+    ApiResponse<Boolean> checkUserToken(String token);
+}
