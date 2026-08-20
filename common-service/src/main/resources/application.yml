@@ -1,6 +1,11 @@
 server:
   shutdown: graceful
 
+assistudy:
+  user-service:
+    # rest(Feign, 기본값)
+    client-mode: ${USER_SERVICE_CLIENT_MODE:rest}
+
 spring:
   application:
     name: common-service
@@ -13,8 +18,16 @@ spring:
       client:
         config:
           user-service:
+            # 웜업 상태 정상 REST 호출이 ~22ms(baseline)라 2초는 충분히 여유 있는 상한선
             connect-timeout: 2000
             read-timeout: 2000
+  grpc:
+    client:
+      channels:
+        user-service:
+          # discovery:// 스킴은 EurekaGrpcNameResolverProvider(GrpcDiscoveryConfig)가 처리
+          address: discovery:///user-service
+          negotiation-type: plaintext
 
 management:
   endpoints:

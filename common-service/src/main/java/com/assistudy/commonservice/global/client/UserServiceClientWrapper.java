@@ -5,14 +5,17 @@ import com.assistudy.commonservice.global.dto.response.UserInfoResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
- * UserServiceClient의 기본 구현체. 실제 원격 호출은 {@link UserServiceFeignClient}에 위임하되
- * Resilience4j Circuit Breaker(instance name: "userService")로 감싼다.
+ * UserServiceClient의 기본 구현체. 
+ * 실제 원격 호출은 REST({@link UserServiceFeignClient}) 또는 gRPC({@link UserServiceGrpcClient})에 위임하되
+ * (assistudy.user-service.client-mode로 전환, REST/gRPC baseline 비교용) 
+ * Resilience4j Circuit Breaker(instance name: "userService")로 감쌈
  *
  * getUserInfo/getUsersInfo는 닉네임 표시 등 부가 정보라 fail-open(회로 열림 시 "알 수 없음"으로
  * 완화된 값 반환)으로 설계했다. checkUserToken은 인증 여부를 결정하는 보안 호출이라
@@ -28,23 +31,31 @@ public class UserServiceClientWrapper implements UserServiceClient {
     private static final String CB_NAME = "userService";
 
     private final UserServiceFeignClient feignClient;
+    private final UserServiceGrpcClient grpcClient;
+
+    @Value("${assistudy.user-service.client-mode:rest}")
+    private String clientMode;
 
     @Override
     @CircuitBreaker(name = CB_NAME, fallbackMethod = "getUserInfoFallback")
     public ApiResponse<UserInfoResponse> getUserInfo(Long userId) {
-        return feignClient.getUserInfo(userId);
+        return useGrpc() ? grpcClient.getUserInfo(userId) : feignClient.getUserInfo(userId);
     }
 
     @Override
     @CircuitBreaker(name = CB_NAME, fallbackMethod = "getUsersInfoFallback")
     public ApiResponse<List<UserInfoResponse>> getUsersInfo(List<Long> userIds) {
-        return feignClient.getUsersInfo(userIds);
+        return useGrpc() ? grpcClient.getUsersInfo(userIds) : feignClient.getUsersInfo(userIds);
     }
 
     @Override
     @CircuitBreaker(name = CB_NAME, fallbackMethod = "checkUserTokenFallback")
     public ApiResponse<Boolean> checkUserToken(String token) {
-        return feignClient.checkUserToken(token);
+        return useGrpc() ? grpcClient.checkUserToken(token) : feignClient.checkUserToken(token);
+    }
+
+    private boolean useGrpc() {
+        return "grpc".equalsIgnoreCase(clientMode);
     }
 
     private ApiResponse<UserInfoResponse> getUserInfoFallback(Long userId, Throwable t) {
