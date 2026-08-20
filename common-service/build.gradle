@@ -4,15 +4,7 @@ plugins {
 
 description = 'Common Service for Assistudy'
 
-ext {
-	set('springGrpcVersion', "1.0.3")
-}
-
-dependencyManagement {
-	imports {
-		mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
-	}
-}
+// spring-grpc-dependencies BOM은 루트 build.gradle에서 전역 관리
 
 dependencies {
 	// gRPC 클라이언트

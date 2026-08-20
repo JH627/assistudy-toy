@@ -5,15 +5,9 @@ plugins {
 
 description = 'Shared library for Assistudy microservices'
 
-ext {
-	set('springGrpcVersion', "1.0.3")
-}
-
-dependencyManagement {
-	imports {
-		mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
-	}
-}
+// io.grpc:*/com.google.protobuf:* 버전은 루트 build.gradle의 subprojects 블록에서
+// spring-grpc-dependencies BOM으로 전역 관리 (log-send/log-process처럼 gRPC를 직접
+// 안 쓰지만 shared를 통해 이 아티팩트들을 transitively 받는 서비스도 버전을 찾을 수 있어야 함)
 
 dependencies {
 	api 'org.springframework.boot:spring-boot-starter-web'

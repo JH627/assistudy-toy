@@ -4,19 +4,12 @@ plugins {
 
 description = 'User Service for Assistudy'
 
-ext {
-	set('springGrpcVersion', "1.0.3")
-}
-
-dependencyManagement {
-	imports {
-		mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
-	}
-}
+// spring-grpc-dependencies BOM은 루트 build.gradle에서 전역 관리
 
 dependencies {
 	implementation project(':shared')
 
+	// gRPC 서버 (common-service -> user-service 내부 호출, Phase 2)
 	implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
 
 	// Eureka Client

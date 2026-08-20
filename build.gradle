@@ -33,12 +33,17 @@ subprojects {
 
 	ext {
 		set('springCloudVersion', "2025.1.1")
+		set('springGrpcVersion', "1.0.3")
 	}
 
 	dependencyManagement {
 		imports {
 			mavenBom "org.springframework.boot:spring-boot-dependencies:4.0.2"
 			mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+			// io.grpc:*/com.google.protobuf:* 버전 관리. shared가 이 아티팩트들을 api로 노출해서
+			// shared에 의존하는 모든 서비스(gRPC를 직접 안 쓰는 log-send/log-process 포함)가
+			// 이 BOM을 봐야 버전을 해석할 수 있음 -> 서비스별로 따로 import하지 않고 여기서 전역 관리
+			mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
 		}
 	}
 
