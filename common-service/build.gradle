@@ -4,7 +4,19 @@ plugins {
 
 description = 'Common Service for Assistudy'
 
+ext {
+	set('springGrpcVersion', "1.0.3")
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
+	}
+}
+
 dependencies {
+	// gRPC 클라이언트
+	implementation 'org.springframework.grpc:spring-grpc-client-spring-boot-starter'
 	implementation project(':shared')
 
 	// Eureka Client
@@ -44,6 +56,7 @@ dependencies {
 	// Feign Client
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 	implementation 'io.github.openfeign:feign-micrometer'
+	// Circuit Breaker
 	implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
 	implementation 'io.github.resilience4j:resilience4j-micrometer:2.4.0'
 
