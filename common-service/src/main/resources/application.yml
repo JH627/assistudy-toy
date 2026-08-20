@@ -8,12 +8,19 @@ spring:
     open-in-view: false
   lifecycle:
     timeout-per-shutdown-phase: 30s
+  cloud:
+    openfeign:
+      client:
+        config:
+          user-service:
+            connect-timeout: 2000
+            read-timeout: 2000
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,circuitbreakers,circuitbreakerevents
   endpoint:
     health:
       show-details: never
@@ -23,6 +30,21 @@ management:
     export:
       zipkin:
         endpoint: ${ZIPKIN_URL:http://localhost:19411}/api/v2/spans
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 50
+        slow-call-duration-threshold: 2s
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
 
 springdoc:
   info:

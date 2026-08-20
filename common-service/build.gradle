@@ -44,6 +44,8 @@ dependencies {
 	// Feign Client
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 	implementation 'io.github.openfeign:feign-micrometer'
+	implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
+	implementation 'io.github.resilience4j:resilience4j-micrometer:2.4.0'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
