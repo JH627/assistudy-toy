@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package com.assistudy.shared.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.assistudy.shared.grpc";
+
+// common-service -> user-service 내부 호출용. 기존 UserServiceClient(Feign)의
+// getUserInfo/getUsersInfo/checkUserToken 3개 메서드와 1:1로 대응한다.
+service UserGrpcService {
+  rpc GetUserInfo(UserInfoRequest) returns (UserInfoReply);
+  rpc GetUsersInfo(UsersInfoRequest) returns (UsersInfoReply);
+  rpc CheckUserToken(CheckTokenRequest) returns (CheckTokenReply);
+}
+
+message UserInfoRequest {
+  int64 user_id = 1;
+}
+
+message UserInfoReply {
+  int64 id = 1;
+  string email = 2;
+  string nickname = 3;
+  int32 profile_image = 4;
+}
+
+message UsersInfoRequest {
+  repeated int64 user_ids = 1;
+}
+
+message UsersInfoReply {
+  repeated UserInfoReply users = 1;
+}
+
+message CheckTokenRequest {
+  string token = 1;
+}
+
+message CheckTokenReply {
+  // true = 블랙리스트(거부), UserServiceClient.checkUserToken과 동일한 의미
+  bool blacklisted = 1;
+}

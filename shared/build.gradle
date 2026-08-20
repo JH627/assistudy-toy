@@ -1,15 +1,47 @@
 plugins {
 	id 'java-library'
+	id 'com.google.protobuf'
 }
 
 description = 'Shared library for Assistudy microservices'
 
+ext {
+	set('springGrpcVersion', "1.0.3")
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
+	}
+}
+
 dependencies {
 	api 'org.springframework.boot:spring-boot-starter-web'
-	
+
+	// gRPC 코드 생성물(user_service.proto)을 공용으로 노출 - user-service(서버)/common-service(클라이언트)가 공유
+	api 'io.grpc:grpc-stub'
+	api 'io.grpc:grpc-protobuf'
+	api 'com.google.protobuf:protobuf-java'
+
 	compileOnly 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+}
+
+protobuf {
+	protoc {
+		artifact = "com.google.protobuf:protoc:${dependencyManagement.importedProperties['protobuf-java.version']}"
+	}
+	plugins {
+		grpc {
+			artifact = "io.grpc:protoc-gen-grpc-java:${dependencyManagement.importedProperties['grpc.version']}"
+		}
+	}
+	generateProtoTasks {
+		all()*.plugins {
+			grpc {}
+		}
+	}
 }
