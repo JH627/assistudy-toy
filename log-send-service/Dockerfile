@@ -10,6 +10,8 @@ COPY build.gradle .
 
 # Copy only build configs for all subprojects (dependency resolution layer)
 COPY shared/build.gradle shared/build.gradle
+COPY homework-service/build.gradle homework-service/build.gradle
+COPY webrtc-service/build.gradle webrtc-service/build.gradle
 COPY user-service/build.gradle user-service/build.gradle
 COPY common-service/build.gradle common-service/build.gradle
 COPY log-process-service/build.gradle log-process-service/build.gradle

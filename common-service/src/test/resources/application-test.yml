@@ -15,12 +15,6 @@ management:
     sampling:
       probability: 0.0
 
-livekit:
-  url: http://localhost:7880
-  api:
-    key: test-key
-    secret: test-secret
-
 gms:
   api:
     base-url: http://localhost:9999

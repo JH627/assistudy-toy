@@ -1,0 +1,13 @@
+eureka:
+  client:
+    enabled: false
+
+management:
+  tracing:
+    sampling:
+      probability: 0.0
+
+livekit:
+  api:
+    key: test-key
+    secret: test-secret

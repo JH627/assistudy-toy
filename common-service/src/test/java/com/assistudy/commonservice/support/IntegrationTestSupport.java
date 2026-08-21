@@ -26,10 +26,10 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.reset;
 
 /**
- * room/homework/webrtc 통합테스트 공통 베이스.
+ * room 통합테스트 공통 베이스. (homework/webrtc는 각자 서비스로 분리됨)
  * Testcontainers(MySQL+Redis)로 실제 DB/캐시를 띄우고, MockMvc로 컨트롤러까지 왕복 검증한다.
  * UserServiceClient는 user-service가 없는 테스트 환경이라 Mockito mock으로 대체한다
- * (room/homework/webrtc 컨트롤러는 @LoginUser만 쓰고 @VerifiedUser는 안 써서, 인증 경로엔 영향 없음).
+ * (room 컨트롤러는 @LoginUser만 쓰고 @VerifiedUser는 안 써서, 인증 경로엔 영향 없음).
  * 기본으로 "요청한 id 그대로 닉네임을 만들어 돌려주는" lenient stub을 깔아두므로,
  * 개별 테스트는 특정 실패/커스텀 응답이 필요할 때만 재정의하면 된다.
  *

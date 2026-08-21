@@ -121,6 +121,31 @@ services:
       retries: 5
 
   # ──────────────────────────────────────────
+  # MySQL - Homework Service DB (port 3309)
+  # AWS 프로덕션에서는 기존 RDS 인스턴스의 별도 스키마로 두지만, 로컬은 기존
+  # mysql-common/mysql-user/mysql-log와 동일하게 서비스별 컨테이너로 분리
+  # ──────────────────────────────────────────
+  mysql-homework:
+    image: mysql:8.0
+    container_name: assistudy-mysql-homework
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_HOMEWORK_DB}
+      MYSQL_USER: ${MYSQL_DB_USER}
+      MYSQL_PASSWORD: ${MYSQL_DB_PASSWORD}
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql-homework-data:/var/lib/mysql
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────
   # Redis (port 6379)
   # ──────────────────────────────────────────
   redis:
@@ -148,4 +173,5 @@ volumes:
   mysql-common-data:
   mysql-user-data:
   mysql-log-data:
+  mysql-homework-data:
   redis-data:

@@ -1,0 +1,44 @@
+plugins {
+	id 'org.springframework.boot'
+}
+
+description = 'WebRTC Service for Assistudy'
+
+dependencies {
+	implementation project(':shared')
+
+	// Eureka Client
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+	// Spring Boot Actuator
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// Prometheus metrics
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springframework.boot:spring-boot-zipkin'
+	implementation 'org.springframework.boot:spring-boot-micrometer-tracing-brave'
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+	// Spring Web
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	// Spring Security
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// LiveKit WebRTC
+	implementation 'io.livekit:livekit-server:0.8.2'
+	// Feign Client (common-service의 room/user 내부 API 호출)
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+	implementation 'io.github.openfeign:feign-micrometer'
+	// Circuit Breaker
+	implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
+	implementation 'io.github.resilience4j:resilience4j-micrometer:2.4.0'
+	// Swagger UI
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	// Spring DevTools
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	// Spring Boot 4.x는 MockMvc 테스트 지원(@AutoConfigureMockMvc 등)을 별도 모듈로 분리함
+	testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

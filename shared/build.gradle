@@ -19,6 +19,11 @@ dependencies {
 
 	compileOnly 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
+	// RemoteErrorDecoder가 쓰는 feign.codec.ErrorDecoder만 필요. Feign을 안 쓰는 서비스
+	// (user-service, apigateway-service 등)에 강제로 얹지 않도록 compileOnly로 둠 -
+	// 이 클래스를 실제로 쓰는 서비스는 이미 자기 build.gradle에 openfeign을 갖고 있음
+	compileOnly 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

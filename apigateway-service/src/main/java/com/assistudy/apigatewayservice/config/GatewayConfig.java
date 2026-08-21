@@ -184,6 +184,14 @@ public class GatewayConfig {
 				)
 				.uri("lb://common-service"))
 
+			// /rooms/{roomId}/feedback/** 는 homework-service 소유라, 아래 common-rooms(/rooms/**)
+			// 캐치올보다 먼저 매칭되도록 순서상 위에 둬야 한다 (Gateway는 첫 매칭 라우트를 씀)
+			.route("homework-service-room-feedback", r -> r.path("/rooms/*/feedback/**")
+				.filters(f -> f
+					.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
+				)
+				.uri("lb://homework-service"))
+
 			.route("common-rooms", r -> r.path("/rooms/**")
 				.filters(f -> f
 					.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
@@ -196,23 +204,23 @@ public class GatewayConfig {
 				)
 				.uri("lb://common-service"))
 
-			.route("common-homework", r -> r.path("/homeworks/**")
+			.route("homework-service-homework", r -> r.path("/homeworks/**")
 				.filters(f -> f
 					.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
 				)
-				.uri("lb://common-service"))
+				.uri("lb://homework-service"))
 
-			.route("common-webrtc", r -> r.path("/webrtc/**")
+			.route("webrtc-service", r -> r.path("/webrtc/**")
 				.filters(f -> f
 					.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
 				)
-				.uri("lb://common-service"))
+				.uri("lb://webrtc-service"))
 
-			.route("common-feedback", r -> r.path("/feedback/**")
+			.route("homework-service-feedback", r -> r.path("/feedback/**")
 				.filters(f -> f
 					.filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
 				)
-				.uri("lb://common-service"))
+				.uri("lb://homework-service"))
 
 			.route("common-gms", r -> r.path("/gms/**")
 				.filters(f -> f

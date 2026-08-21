@@ -1,0 +1,79 @@
+server:
+  port: 8087
+  shutdown: graceful
+
+spring:
+  application:
+    name: webrtc-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  cloud:
+    openfeign:
+      client:
+        config:
+          user-service:
+            connect-timeout: 2000
+            read-timeout: 2000
+          common-service:
+            connect-timeout: 2000
+            read-timeout: 2000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,circuitbreakers,circuitbreakerevents
+  endpoint:
+    health:
+      show-details: never
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      zipkin:
+        endpoint: ${ZIPKIN_URL:http://localhost:19411}/api/v2/spans
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 50
+        slow-call-duration-threshold: 2s
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        # RemoteErrorDecoder가 복원한 정상 비즈니스 예외(방 없음 등)는 실패율 계산에서 제외 -
+        # 실제 장애(타임아웃, connection refused 등 원본 FeignException)만 실패로 집계
+        ignore-exceptions:
+          - com.assistudy.shared.exception.CustomException
+      roomService:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 50
+        slow-call-duration-threshold: 2s
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        # RemoteErrorDecoder가 복원한 정상 비즈니스 예외(방 없음 등)는 실패율 계산에서 제외 -
+        # 실제 장애(타임아웃, connection refused 등 원본 FeignException)만 실패로 집계
+        ignore-exceptions:
+          - com.assistudy.shared.exception.CustomException
+
+springdoc:
+  info:
+    title: WebRTC Service API
+    description: Assistudy WebRTC Service - 화상회의 토큰 발급
+    version: 1.0.0
+  swagger-ui:
+    operations-sorter: method
+    display-request-duration: true
+  api-docs:
+    path: /v3/api-docs
