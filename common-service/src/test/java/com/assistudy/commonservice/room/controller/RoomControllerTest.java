@@ -95,14 +95,16 @@ class RoomControllerTest extends IntegrationTestSupport {
         Room room = saveRoom(RoomType.STUDY, false, null, 4);
         saveParticipant(room, HOST_ID);
 
-        mockMvc.perform(get("/rooms/{roomId}", room.getId()))
+        mockMvc.perform(get("/rooms/{roomId}", room.getId())
+                        .header(HeaderConstants.USER_ID_HEADER, HOST_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.id").value(room.getId()));
     }
 
     @Test
     void 존재하지_않는_방_조회는_404에_해당하는_에러코드를_반환한다() throws Exception {
-        mockMvc.perform(get("/rooms/{roomId}", 999999L))
+        mockMvc.perform(get("/rooms/{roomId}", 999999L)
+                        .header(HeaderConstants.USER_ID_HEADER, HOST_ID))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("ROOM001"));
     }

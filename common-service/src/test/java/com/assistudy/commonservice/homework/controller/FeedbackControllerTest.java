@@ -171,6 +171,7 @@ class FeedbackControllerTest extends IntegrationTestSupport {
         GetFeedbackListRequest request = GetFeedbackListRequest.builder().homeworkId(homework.getId()).build();
 
         mockMvc.perform(post("/feedback/list")
+                        .header(HeaderConstants.USER_ID_HEADER, PARTICIPANT_ID)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

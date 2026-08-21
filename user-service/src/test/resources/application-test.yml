@@ -1,0 +1,57 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  data:
+    redis:
+      password: ""
+  # SecurityConfig의 oauth2Login()이 ClientRegistrationRepository 빈을 무조건 요구해서
+  # 최소 1개 registration이 필요 (실제 카카오/네이버 호출은 안 함, 더미 값)
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope:
+              - profile_nickname
+              - account_email
+            authorization-grant-type: authorization_code
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+            client-name: Kakao
+            client-authentication-method: client_secret_post
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+eureka:
+  client:
+    enabled: false
+
+management:
+  tracing:
+    sampling:
+      probability: 0.0
+
+# JwtUtil이 @PostConstruct에서 RSA 키로 파싱하므로 테스트 전용 더미 키페어(운영 키 아님)
+jwt:
+  private-key: MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDHpKCVTG6EdfyVDMbIIz/HFH7GN3T5FMHQAIavUzByzWIwNCFJpke23hBOXLHfOAz8clDcgglaayKvFgiNr3QXUDHCmj37zuJR3HDQTB/7eq613FABl3DPWQUW1fWZKfBnAZVygfLvBh0zDm1+kfRCZxSmi2lLdNHdBxdFkcIpK00dGRKG/NLSM0+9659WZjzJJhDlo+eF1PLwp/3e+pjG0lJ3W97XxGZ79DBrB30l9OSo2AAtgMCyI/I/nTOxdRf2Iw2pf9q5w68NLK9RT3hBmPCS/BSxCr91B/PmpCzGvK21hzxONGu68ZdAnCWkPpKYG4TkaIcrmXnyJwT0C3u5AgMBAAECggEACBma1lPijAdJdzasfgRIGyiuuBYZ7d00u965mDV02sOQf0ouK5HOiRHbcYJ7SQY6KKfutfOks4FzR81KDY2X1TZQvoeJikTrk8yw2xKrnYVtvz0wFdByKEeBWFrX+x3jfhpnWN0C4UXLO34TXTZIxcTu5o7zd7dGqIQYIp92VDs2LlSsM3wVZbWp3bj/iaAppB5rEOkhc/uxjr4fW5XC4HSdseI/43w8nB2I3L+2jr0+xpqiwld/LKGgkC6iQ8mcC5OD3lF2qlXzkJB9wLX/tVm1T6rG+jPWdQTtbJRCfax5oLIbhAgznlbrNiaXBb2+Kt+8VUHXjgDisj36ReZA7QKBgQDjsKBBKCY9Of78KU8GMaQfJm678FnTwVNtpHaGUatSVPxEtUD3PT1RiHWzwzm7EbWap39uWama34Gct+WtME1ov5UtsH2M4A72WUlGXR+zLUU7+uyMeWEV0TCPSeRuZtMeLOOna6ckcqsaRZGY03eFQ+eIgB9gchFsjBjL8/muQwKBgQDgd0TfmrHqDJjhW+rxRegF7KaofqhMFBzcAEL6zjBTa9HNlvp7OLLIR+o5CriMN4DmeDVMIBEnKIg5b4hOhvGXzMnQAbz8hA52B4wnFMCHnwWPrw/zkWkX/Kr3e18TM2+MiGAq3uup0VJfnAj+Mp4MBJdrfvAEXmlFzfg40c5UUwKBgQCXksFcHso2ACHK5AUDbpB/XCpjWoGyAgTz/IQarsuKJ6E4bCEvdckYOeuBG/mWmxd2OQMQBwhtXVT/azyuqnUdwkwg+ljaK15KiO3KtbugoAZzA3vtl/AVggj9modDJ5hrgh6bGYNPNDbLanyebEgooyfDKue4YLdQt4LaYzRX2QKBgCJnhYH0VwK1rZUVHpyeh2KpFB5NU4RdrNK3o4yHn/aZVw347ymF1jlGdIsLrp+nPjWVBS5G1/o1hzOueaj3m/4VYHVmXs4he4nxvDSdRKlE4XhVb894YTBRBO9r1HW/84AJwxuvEVX1BHgtFV/I6FqVNZQ/X5B73Azb9gjXd5WLAoGAYXAlc2HhgJgzHo3eDJgaez2mkuAuKRpp0vTiQccIotMdCdsXL3O09gkMcjJEitFk4MJVuUdt5BuUUItrF7pGDGgQw1KUkVgaKOr5WyYqtx95z/69K94b6rZqfRlO4pJQRK9Hs6aS6myT6LI0svkdT4AyA2ofB8lLDYqbh/qM65A=
+  public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx6SglUxuhHX8lQzGyCM/xxR+xjd0+RTB0ACGr1Mwcs1iMDQhSaZHtt4QTlyx3zgM/HJQ3IIJWmsirxYIja90F1Axwpo9+87iUdxw0Ewf+3qutdxQAZdwz1kFFtX1mSnwZwGVcoHy7wYdMw5tfpH0QmcUpotpS3TR3QcXRZHCKStNHRkShvzS0jNPveufVmY8ySYQ5aPnhdTy8Kf93vqYxtJSd1ve18Rme/Qwawd9JfTkqNgALYDAsiPyP50zsXUX9iMNqX/aucOvDSyvUU94QZjwkvwUsQq/dQfz5qQsxryttYc8TjRruvGXQJwlpD6SmBuE5GiHK5l58icE9At7uQIDAQAB
+  access-token:
+    expiration: 1800000
+  refresh-token:
+    expiration: 604800000
+  redirect: http://localhost:8080/login/social?code=%s&role=%s
+
+oauth:
+  failure:
+    redirect-uri: http://localhost:8080/login
+
+openapi:
+  service:
+    gateway-url: http://localhost:8080

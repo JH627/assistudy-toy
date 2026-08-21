@@ -25,7 +25,7 @@ public class ExceptionAdvice {
     public ResponseEntity<ApiResponse<String>> handleCustomException(CustomException e) {
         BaseErrorCode code = e.getCode();
         log.warn("[CustomException] code: {}, message: {}", code.getCode(), code.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return ResponseEntity.status(code.getStatus())
                 .body(ApiResponse.onFailure(code.getStatus(), code.getCode(), code.getMessage(), null));
     }
 
