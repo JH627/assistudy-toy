@@ -70,8 +70,6 @@ jobs:
             ${{ runner.os }}-gradle-
 
       # 8개 서비스 JAR 동시 빌드 (--parallel)
-      # homework-service/webrtc-service는 이미지만 빌드/푸시하고, 아직 ECS에 서비스가
-      # 없어서 deploy-core-services 배포 대상에는 넣지 않음 (AWS 인프라 프로비저닝 후 추가)
       - name: Build all JARs
         run: |
           chmod +x gradlew
@@ -199,7 +197,7 @@ jobs:
     needs: deploy-discovery
     strategy:
       matrix:
-        service: [user-service, common-service, log-send-service, log-process-service]
+        service: [user-service, common-service, log-send-service, log-process-service, homework-service, webrtc-service]
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
