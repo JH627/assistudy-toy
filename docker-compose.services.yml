@@ -157,6 +157,54 @@ services:
       - service-network
     restart: on-failure
 
+  # ──────────────────────────────────────────
+  # Homework Service
+  # ──────────────────────────────────────────
+  homework-service:
+    build:
+      context: .
+      dockerfile: homework-service/Dockerfile
+    container_name: assistudy-homework
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - EUREKA_SERVER_URL=http://eureka:eureka@discovery-service:8761/eureka
+      - MYSQL_HOMEWORK_HOST=host.docker.internal
+      - MYSQL_HOMEWORK_PORT=3309
+      - ZIPKIN_URL=http://host.docker.internal:19411
+    ports:
+      - "8086:8086"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - service-network
+    restart: on-failure
+
+  # ──────────────────────────────────────────
+  # WebRTC Service
+  # ──────────────────────────────────────────
+  webrtc-service:
+    build:
+      context: .
+      dockerfile: webrtc-service/Dockerfile
+    container_name: assistudy-webrtc
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - EUREKA_SERVER_URL=http://eureka:eureka@discovery-service:8761/eureka
+      - ZIPKIN_URL=http://host.docker.internal:19411
+    ports:
+      - "8087:8087"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - service-network
+    restart: on-failure
+
 networks:
   service-network:
     driver: bridge

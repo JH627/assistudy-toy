@@ -69,7 +69,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 6개 서비스 JAR 동시 빌드 (--parallel)
+      # 8개 서비스 JAR 동시 빌드 (--parallel)
+      # homework-service/webrtc-service는 이미지만 빌드/푸시하고, 아직 ECS에 서비스가
+      # 없어서 deploy-core-services 배포 대상에는 넣지 않음 (AWS 인프라 프로비저닝 후 추가)
       - name: Build all JARs
         run: |
           chmod +x gradlew
@@ -80,6 +82,8 @@ jobs:
             :log-send-service:bootJar \
             :log-process-service:bootJar \
             :discovery-service:bootJar \
+            :homework-service:bootJar \
+            :webrtc-service:bootJar \
             -x test --parallel --no-daemon
 
       # 다음 job에서 사용할 수 있도록 JAR 업로드
@@ -94,6 +98,8 @@ jobs:
             log-send-service/build/libs/*.jar
             log-process-service/build/libs/*.jar
             discovery-service/build/libs/*.jar
+            homework-service/build/libs/*.jar
+            webrtc-service/build/libs/*.jar
           retention-days: 1
 
   # ────────────────────────────────────────────────────────
@@ -118,6 +124,10 @@ jobs:
             jar_path: log-process-service/build/libs
           - service: discovery-service
             jar_path: discovery-service/build/libs
+          - service: homework-service
+            jar_path: homework-service/build/libs
+          - service: webrtc-service
+            jar_path: webrtc-service/build/libs
 
     steps:
       - uses: actions/checkout@v4
