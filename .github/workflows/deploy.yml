@@ -11,8 +11,103 @@ env:
 
 jobs:
   # ────────────────────────────────────────────────────────
-  # Step 0: 테스트 (Testcontainers는 ubuntu-latest 기본 Docker로 실행)
-  # 실패하면 이후 빌드/배포 전체를 막음
+  # Step 0: 변경된 서비스 감지
+  # shared/build.gradle/settings.gradle/gradle wrapper가 바뀌면
+  # 그걸 의존하는 서비스 전부 변경된 것으로 잡음 (apigateway/discovery는 :shared 미의존이라 제외)
+  # ────────────────────────────────────────────────────────
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      all: ${{ steps.filter.outputs.changes }}
+      core: ${{ steps.compute.outputs.core }}
+      any: ${{ steps.compute.outputs.any }}
+      discovery_changed: ${{ steps.compute.outputs.discovery_changed }}
+      gateway_changed: ${{ steps.compute.outputs.gateway_changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Path filter
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            apigateway-service:
+              - 'apigateway-service/**'
+              - 'build.gradle'
+              - 'settings.gradle'
+              - 'gradle/**'
+              - 'gradlew'
+            discovery-service:
+              - 'discovery-service/**'
+              - 'build.gradle'
+              - 'settings.gradle'
+              - 'gradle/**'
+              - 'gradlew'
+            user-service:
+              - 'user-service/**'
+              - 'shared/**'
+              - 'build.gradle'
+              - 'settings.gradle'
+              - 'gradle/**'
+              - 'gradlew'
+            common-service:
+              - 'common-service/**'
+              - 'shared/**'
+              - 'build.gradle'
+              - 'settings.gradle'
+              - 'gradle/**'
+              - 'gradlew'
+            log-send-service:
+              - 'log-send-service/**'
+              - 'shared/**'
+              - 'build.gradle'
+              - 'settings.gradle'
+              - 'gradle/**'
+              - 'gradlew'
+            log-process-service:
+              - 'log-process-service/**'
+              - 'shared/**'
+              - 'build.gradle'
+              - 'settings.gradle'
+              - 'gradle/**'
+              - 'gradlew'
+            homework-service:
+              - 'homework-service/**'
+              - 'shared/**'
+              - 'build.gradle'
+              - 'settings.gradle'
+              - 'gradle/**'
+              - 'gradlew'
+            webrtc-service:
+              - 'webrtc-service/**'
+              - 'shared/**'
+              - 'build.gradle'
+              - 'settings.gradle'
+              - 'gradle/**'
+              - 'gradlew'
+
+      # changes = 매치된 필터(서비스)명 JSON 배열. 여기서 discovery/gateway를 뺀 core 배열이랑
+      # 개별 boolean도 같이 뽑아서 배포 단계에서 바로 씀
+      - name: Compute derived outputs
+        id: compute
+        run: |
+          ALL='${{ steps.filter.outputs.changes }}'
+          echo "changed services: $ALL"
+
+          CORE=$(echo "$ALL" | jq -c '[.[] | select(. != "apigateway-service" and . != "discovery-service")]')
+          ANY=$(echo "$ALL" | jq -r 'length > 0')
+          DISCOVERY=$(echo "$ALL" | jq -r 'any(. == "discovery-service")')
+          GATEWAY=$(echo "$ALL" | jq -r 'any(. == "apigateway-service")')
+
+          echo "core=$CORE" >> "$GITHUB_OUTPUT"
+          echo "any=$ANY" >> "$GITHUB_OUTPUT"
+          echo "discovery_changed=$DISCOVERY" >> "$GITHUB_OUTPUT"
+          echo "gateway_changed=$GATEWAY" >> "$GITHUB_OUTPUT"
+
+  # ────────────────────────────────────────────────────────
+  # Step 1: 테스트 (Testcontainers는 ubuntu-latest 기본 Docker로 실행)
+  # 변경 범위와 무관하게 항상 전체 실행 — 실패하면 이후 빌드/배포 전체를 막음
   # ────────────────────────────────────────────────────────
   test:
     name: Run Tests
@@ -42,13 +137,13 @@ jobs:
           ./gradlew test --no-daemon
 
   # ────────────────────────────────────────────────────────
-  # Step 1: 모든 서비스 JAR을 한 번에 병렬 빌드
-  # Gradle 캐시를 재사용해 의존성 다운로드 없이 빌드
+  # Step 2: 변경된 서비스 JAR만 병렬 빌드
   # ────────────────────────────────────────────────────────
   build-jars:
     name: Build JARs
     runs-on: ubuntu-latest
-    needs: test
+    needs: [ test, detect-changes ]
+    if: needs.detect-changes.outputs.any == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -58,7 +153,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # Gradle 의존성 캐시 — build.gradle 변경 시에만 재다운로드
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:
@@ -69,26 +163,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 8개 서비스 JAR 동시 빌드 (--parallel)
-      - name: Build all JARs
+      - name: Build changed service JARs
         run: |
           chmod +x gradlew
-          ./gradlew \
-            :apigateway-service:bootJar \
-            :user-service:bootJar \
-            :common-service:bootJar \
-            :log-send-service:bootJar \
-            :log-process-service:bootJar \
-            :discovery-service:bootJar \
-            :homework-service:bootJar \
-            :webrtc-service:bootJar \
-            -x test --parallel --no-daemon
+          TASKS=$(echo '${{ needs.detect-changes.outputs.all }}' | jq -r '.[] | ":\(.):bootJar"' | tr '\n' ' ')
+          echo "gradle tasks: $TASKS"
+          ./gradlew $TASKS -x test --parallel --no-daemon
 
-      # 다음 job에서 사용할 수 있도록 JAR 업로드
+      # 변경 안 된 서비스는 build/libs가 아예 없어서 glob이 안 걸림 -> if-no-files-found로 무시
       - name: Upload JARs as artifacts
         uses: actions/upload-artifact@v4
         with:
           name: service-jars
+          if-no-files-found: ignore
           path: |
             apigateway-service/build/libs/*.jar
             user-service/build/libs/*.jar
@@ -101,31 +188,15 @@ jobs:
           retention-days: 1
 
   # ────────────────────────────────────────────────────────
-  # Step 2: ECR에 이미지 빌드 & 푸시 (서비스별 병렬 실행)
+  # Step 3: ECR에 이미지 빌드 & 푸시 (변경된 서비스만, 병렬 실행)
   # ────────────────────────────────────────────────────────
   build-and-push:
     name: Build & Push — ${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: build-jars
+    needs: [ build-jars, detect-changes ]
     strategy:
       matrix:
-        include:
-          - service: apigateway-service
-            jar_path: apigateway-service/build/libs
-          - service: user-service
-            jar_path: user-service/build/libs
-          - service: common-service
-            jar_path: common-service/build/libs
-          - service: log-send-service
-            jar_path: log-send-service/build/libs
-          - service: log-process-service
-            jar_path: log-process-service/build/libs
-          - service: discovery-service
-            jar_path: discovery-service/build/libs
-          - service: homework-service
-            jar_path: homework-service/build/libs
-          - service: webrtc-service
-            jar_path: webrtc-service/build/libs
+        service: ${{ fromJson(needs.detect-changes.outputs.all) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -147,7 +218,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          JAR_FILE=$(ls ${{ matrix.jar_path }}/*.jar | grep -v plain)
+          JAR_FILE=$(ls ${{ matrix.service }}/build/libs/*.jar | grep -v plain)
           IMAGE_TAG=${{ github.sha }}
           IMAGE_URI=${{ env.ECR_REGISTRY }}/assistudy/${{ matrix.service }}
 
@@ -164,13 +235,16 @@ jobs:
           echo "IMAGE_URI=${IMAGE_URI}:${IMAGE_TAG}" >> $GITHUB_ENV
 
   # ────────────────────────────────────────────────────────
-  # Step 3: ECS 배포 (의존성 순서대로 순차 실행)
-  # discovery → (user, common, log-send, log-process) → apigateway
+  # Step 4: ECS 배포 (의존성 순서대로 순차 실행, 변경된 서비스만)
+  # discovery → (변경된 core 서비스들) → apigateway
+  # 앞 단계가 "변경 없어서 스킵"이어도 뒷 단계는 진행되도록
+  # result가 success 또는 skipped일 때만 이어지게 조건을 검
   # ────────────────────────────────────────────────────────
   deploy-discovery:
     name: Deploy — discovery-service
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [ build-and-push, detect-changes ]
+    if: needs.build-and-push.result == 'success' && needs.detect-changes.outputs.discovery_changed == 'true'
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -186,7 +260,6 @@ jobs:
             --service discovery-service \
             --force-new-deployment
 
-          # 안정화 대기 (다음 서비스 배포 전에 완료 확인)
           aws ecs wait services-stable \
             --cluster assistudy-prod \
             --services discovery-service
@@ -194,10 +267,15 @@ jobs:
   deploy-core-services:
     name: Deploy — core services
     runs-on: ubuntu-latest
-    needs: deploy-discovery
+    needs: [ build-and-push, deploy-discovery, detect-changes ]
+    if: |
+      !cancelled() &&
+      needs.build-and-push.result == 'success' &&
+      (needs.deploy-discovery.result == 'success' || needs.deploy-discovery.result == 'skipped') &&
+      needs.detect-changes.outputs.core != '[]'
     strategy:
       matrix:
-        service: [user-service, common-service, log-send-service, log-process-service, homework-service, webrtc-service]
+        service: ${{ fromJson(needs.detect-changes.outputs.core) }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -220,7 +298,12 @@ jobs:
   deploy-gateway:
     name: Deploy — apigateway-service
     runs-on: ubuntu-latest
-    needs: deploy-core-services
+    needs: [ build-and-push, deploy-core-services, detect-changes ]
+    if: |
+      !cancelled() &&
+      needs.build-and-push.result == 'success' &&
+      (needs.deploy-core-services.result == 'success' || needs.deploy-core-services.result == 'skipped') &&
+      needs.detect-changes.outputs.gateway_changed == 'true'
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
