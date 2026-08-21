@@ -23,12 +23,6 @@ spring:
 user-service:
   url: ${USER_SERVICE_URL:http://localhost:8082}
 
-livekit:
-  url: ${LIVEKIT_URL:http://localhost:7880}
-  api:
-    key: ${LIVEKIT_API_KEY:devkey}
-    secret: ${LIVEKIT_SECRET:secret}
-
 gms:
   api:
     base-url: ${GMS_API_BASE_URL:http://localhost:9090}

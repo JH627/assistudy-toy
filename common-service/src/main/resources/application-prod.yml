@@ -24,12 +24,6 @@ spring:
       preferred-networks:
         - 10.20
 
-livekit:
-  url: ${LIVEKIT_URL}
-  api:
-    key: ${LIVEKIT_API_KEY}
-    secret: ${LIVEKIT_SECRET}
-
 gms:
   api:
     base-url: ${GMS_API_BASE_URL}
