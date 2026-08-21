@@ -253,16 +253,28 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to ECS
+      # 매 배포마다 새 task definition revision을 등록하고 이미지를 :latest가 아니라
+      # 커밋 SHA로 고정 - 롤백 시 이전 revision을 그대로 재적용하면 이전 이미지로 복구됨
+      - name: Download current task definition
         run: |
-          aws ecs update-service \
-            --cluster assistudy-prod \
-            --service discovery-service \
-            --force-new-deployment
+          aws ecs describe-task-definition --task-definition discovery-service \
+            --query taskDefinition > task-definition.json
 
-          aws ecs wait services-stable \
-            --cluster assistudy-prod \
-            --services discovery-service
+      - name: Render new image into task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: discovery-service
+          image: ${{ env.ECR_REGISTRY }}/assistudy/discovery-service:${{ github.sha }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: discovery-service
+          cluster: assistudy-prod
+          wait-for-service-stability: true
 
   deploy-core-services:
     name: Deploy — core services
@@ -284,16 +296,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to ECS
+      - name: Download current task definition
         run: |
-          aws ecs update-service \
-            --cluster assistudy-prod \
-            --service ${{ matrix.service }} \
-            --force-new-deployment
+          aws ecs describe-task-definition --task-definition ${{ matrix.service }} \
+            --query taskDefinition > task-definition.json
 
-          aws ecs wait services-stable \
-            --cluster assistudy-prod \
-            --services ${{ matrix.service }}
+      - name: Render new image into task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ matrix.service }}
+          image: ${{ env.ECR_REGISTRY }}/assistudy/${{ matrix.service }}:${{ github.sha }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ matrix.service }}
+          cluster: assistudy-prod
+          wait-for-service-stability: true
 
   deploy-gateway:
     name: Deploy — apigateway-service
@@ -312,13 +334,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to ECS
+      - name: Download current task definition
         run: |
-          aws ecs update-service \
-            --cluster assistudy-prod \
-            --service apigateway-service \
-            --force-new-deployment
+          aws ecs describe-task-definition --task-definition apigateway-service \
+            --query taskDefinition > task-definition.json
 
-          aws ecs wait services-stable \
-            --cluster assistudy-prod \
-            --services apigateway-service
+      - name: Render new image into task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: apigateway-service
+          image: ${{ env.ECR_REGISTRY }}/assistudy/apigateway-service:${{ github.sha }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: apigateway-service
+          cluster: assistudy-prod
+          wait-for-service-stability: true
