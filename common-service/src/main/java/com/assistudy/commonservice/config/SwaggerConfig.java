@@ -45,10 +45,7 @@ public class SwaggerConfig {
                                     "**주요 모듈:**\n" +
                                     "- **Analysis**: 학습 분석 및 통계\n" +
                                     "- **Time**: 시간 관리 및 스케줄링\n" +
-                                    "- **Rooms**: 스터디룸 관리\n" +
-                                    "- **Homeworks**: 숙제 및 과제 관리\n" +
-                                    "- **Feedback**: 피드백 시스템\n" +
-                                    "- **WebRTC**: 화상통화 및 실시간 통신\n\n" +
+                                    "- **Rooms**: 스터디룸 관리\n\n" +
                                     "**인증 방법:**\n" +
                                     "1. 로그인 API를 통해 JWT 토큰을 발급받습니다.\n" +
                                     "2. 상단의 'Authorize' 버튼을 클릭합니다.\n" +
