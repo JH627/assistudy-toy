@@ -34,6 +34,7 @@ subprojects {
 	ext {
 		set('springCloudVersion', "2025.1.1")
 		set('springGrpcVersion', "1.0.3")
+		set('testcontainersVersion', "2.0.3")
 	}
 
 	dependencyManagement {
@@ -44,6 +45,9 @@ subprojects {
 			// shared에 의존하는 모든 서비스(gRPC를 직접 안 쓰는 log-send/log-process 포함)가
 			// 이 BOM을 봐야 버전을 해석할 수 있음 -> 서비스별로 따로 import하지 않고 여기서 전역 관리
 			mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
+			// spring-boot-dependencies가 testcontainers-bom을 임포트하긴 하지만 중첩 임포트라
+			// dependency-management 플러그인이 버전을 못 찾는 경우가 있어 명시적으로 다시 임포트
+			mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
 		}
 	}
 
