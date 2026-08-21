@@ -209,7 +209,7 @@ public class RoomQueryServiceImpl implements RoomQueryService {
 	public SearchRoomsResponse getRecommendedRooms(Long userId) {
 		// 집계 쿼리 결과(전 사용자 공통)는 별도 빈에서 캐싱해서 가져옴 - 아래부터는 캐시 히트 여부와
 		// 무관하게 이 사용자 기준으로 매번 새로 계산(참가자 수/isJoined는 실시간이어야 하므로)
-		List<RecommendCandidate> topRooms = roomRecommendationCandidateService.getCandidates();
+		List<RecommendCandidate> topRooms = roomRecommendationCandidateService.getCandidates().getCandidates();
 
 		if (topRooms.isEmpty()) {
 			return RoomConverter.toSearchRoomsResponse(List.of(), "추천");

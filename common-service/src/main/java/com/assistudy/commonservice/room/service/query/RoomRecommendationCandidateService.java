@@ -1,6 +1,7 @@
 package com.assistudy.commonservice.room.service.query;
 
 import com.assistudy.commonservice.room.dto.cache.RecommendCandidate;
+import com.assistudy.commonservice.room.dto.cache.RecommendCandidateList;
 import com.assistudy.commonservice.room.entity.Room;
 import com.assistudy.commonservice.time.repository.TotalTimeRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +34,13 @@ public class RoomRecommendationCandidateService {
 
     // 전 사용자 공통 결과라 파라미터가 없고, 키도 고정 문자열 하나만 씀
     @Cacheable(value = "recommend-candidates", key = "'all'")
-    public List<RecommendCandidate> getCandidates() {
+    public RecommendCandidateList getCandidates() {
         // 최근 30일 totalTime 대비 focusTime 비율이 높은 방 후보를 최대 50개까지만 조회
         List<Room> topRooms = totalTimeRepository.findTopRoomsByFocusRatio(
                 LocalDate.now().minusDays(RECOMMEND_LOOKBACK_DAYS),
                 PageRequest.of(0, RECOMMEND_CANDIDATE_LIMIT));
 
-        return topRooms.stream()
+        List<RecommendCandidate> candidates = topRooms.stream()
                 .map(room -> new RecommendCandidate(
                         room.getId(),
                         room.getHostUserId(),
@@ -52,5 +53,6 @@ public class RoomRecommendationCandidateService {
                         room.getMaxParticipants(),
                         room.getCreatedAt()))
                 .toList();
+        return new RecommendCandidateList(candidates);
     }
 }
