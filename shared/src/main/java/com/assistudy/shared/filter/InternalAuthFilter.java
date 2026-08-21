@@ -32,7 +32,7 @@ public class InternalAuthFilter extends OncePerRequestFilter {
         return uri.startsWith("/actuator")
                 || uri.startsWith("/v3/api-docs")
                 || uri.startsWith("/swagger-ui")
-                || additionalExcludePaths.contains(uri);
+                || additionalExcludePaths.stream().anyMatch(uri::startsWith);
     }
 
     @Override
