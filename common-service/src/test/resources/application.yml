@@ -1,0 +1,27 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  cache:
+    type: redis
+
+eureka:
+  client:
+    enabled: false
+
+management:
+  tracing:
+    sampling:
+      probability: 0.0
+
+livekit:
+  url: http://localhost:7880
+  api:
+    key: test-key
+    secret: test-secret
+
+gms:
+  api:
+    base-url: http://localhost:9999
+    key: test-key
