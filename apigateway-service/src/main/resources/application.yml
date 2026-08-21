@@ -5,10 +5,15 @@ spring:
     timeout-per-shutdown-phase: 30s
   cloud:
     gateway:
-      # 배포 중 옛 인스턴스가 종료된 직후에도 게이트웨이/로드밸런서의 로컬 Eureka
-      # 캐시가 잠깐 죽은 인스턴스를 들고 있을 수 있음(레지스트리 갱신 주기 지연) -
-      # connection-refused/5xx 시 다른(살아있는) 인스턴스로 재시도해서 그 틈을 메움.
-      # 쓰기 메서드는 재처리 안전성 확인 전까지 GET만 대상으로 함
+      # 배포 중 옛 태스크가 종료되는 시점 근처에는 그 인스턴스로의 연결 시도가
+      # 즉시 거부되지 않고 몇 초씩 행(hang)될 수 있음(ENI/네트워크 정리 중 SYN이
+      # 조용히 드롭되는 구간 - 실측: connection-refused 500과 별개로 3초 타임아웃되는
+      # 요청이 관찰됨). 기본 connect-timeout이 너무 길면 그 사이 재시도 필터가 있어도
+      # 시간 안에 살아있는 인스턴스로 못 넘어가서 짧게 잘라줌
+      httpclient:
+        connect-timeout: 1000
+      # 위와 같은 이유로 죽은 인스턴스로의 연결/5xx 시 다른(살아있는) 인스턴스로
+      # 재시도해서 그 틈을 메움. 쓰기 메서드는 재처리 안전성 확인 전까지 GET만 대상으로 함
       default-filters:
         - name: Retry
           args:
