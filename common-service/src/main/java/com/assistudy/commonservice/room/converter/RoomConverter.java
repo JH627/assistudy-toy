@@ -15,6 +15,24 @@ import java.util.stream.Collectors;
 public class RoomConverter {
 
 	/**
+	 * Room 엔티티를 내부 REST API(homework-service/webrtc-service 조회용) 응답으로 변환합니다.
+	 */
+	public static RoomSummaryResponse toRoomSummaryResponse(Room room) {
+		return new RoomSummaryResponse(
+				room.getId(),
+				room.getHostUserId(),
+				room.getName(),
+				room.getType().name(),
+				room.getTagName(),
+				room.getDescription(),
+				room.getIsPrivate(),
+				room.getIsActive(),
+				room.getIsDeleted(),
+				room.getMaxParticipants()
+		);
+	}
+
+	/**
 	 * Room 엔티티를 CreateRoomResponse로 변환합니다.
 	 */
 	public static CreateRoomResponse toCreateRoomResponse(Room room) {
